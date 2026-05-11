@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "rotationSeconds": 12,
+  "sponsors": [
+    {
+      "id": "hera_graphix",
+      "name": "Hera Graphix",
+      "title": "Official Hera Graphix",
+      "description": "Design work, app support, resources and Hera Player updates.",
+      "imageUrl": "https://heragraphix.github.io/assets/Hera%20Player.png",
+      "bannerUrl": "https://heragraphix.github.io/assets/hub.png",
+      "clickUrl": "https://heragraphix.github.io/#contact",
+      "priority": 1,
+      "enabled": true
+    }
+  ]
+}
