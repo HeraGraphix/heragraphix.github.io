@@ -231,16 +231,18 @@
       currentBtn = null;
     }
     
-    audio.onended = function() {
-      btn.textContent = '▶ Play';
-      currentAudio = null;
-      currentBtn = null;
-    };
+    if (audio) {
+      audio.onended = function() {
+        btn.textContent = '▶ Play';
+        currentAudio = null;
+        currentBtn = null;
+      };
+    }
   }
 
-  // 🔒 Account Deletion Request Form Handler
-  // API URL එක සකසා ගන්න (Cloudflare Worker URL හෝ Web3Forms URL)
-  const DELETE_API = "https://YOUR-WORKER-NAME.workers.dev";
+  // 🔒 Account Deletion Request Form Handler using Web3Forms
+  // ඔබගේ සක්‍රීය Access Key එක මෙහි අඩංගු කර ඇත
+  const WEB3FORMS_KEY = "38e17a98-a6a2-4d9a-9ab1-070bc7d8aeb4";
 
   document.getElementById("deleteForm").addEventListener("submit", async function(e) {
     e.preventDefault();
@@ -259,24 +261,30 @@
     status.innerHTML = "Sending request...";
 
     try {
-      const response = await fetch(DELETE_API, {
+      const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject: "Hera Player Account Deletion Request",
+          from_name: "Hera Player Website",
           email: email,
           reason: reason || "No reason provided",
-          app: "Hera Player"
+          message: `A user has requested account deletion.\n\nUser Email: ${email}\nReason: ${reason || "No reason provided"}`
         })
       });
 
-      if (response.ok) {
+      const json = await response.json();
+
+      if (response.status == 200 && json.success) {
         status.className = "status-success";
-        status.innerHTML = "✅ Your request will be reviewed and manually processed by Hera Graphix within 30 days.";
+        status.innerHTML = "✅ Your request has been submitted. It will be reviewed and manually processed by Hera Graphix within 30 days.";
         document.getElementById("deleteForm").reset();
       } else {
-        throw new Error("Server error");
+        throw new Error(json.message || "Failed to submit request");
       }
     } catch (error) {
       status.className = "status-error";
