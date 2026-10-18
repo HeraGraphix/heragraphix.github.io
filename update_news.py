@@ -3,20 +3,47 @@ import sys
 import re
 import json
 import html
-import urllib.request
+from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
-from datetime import datetime
+import requests
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-RSS_URL = "http://sinhala.adaderana.lk/rss.php"
+# Sri Lanka Timezone (UTC + 05:30)
+SL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
+
+PRIMARY_RSS_URL = "https://sinhala.adaderana.lk/rss.xml"
+FALLBACK_RSS_URL = "https://sinhala.adaderana.lk/rss.php"
 NEWS_JSON_FILE = "news.json"
-MAX_ITEMS_TO_KEEP = 50
+
+# Auto-purge settings
+MAX_AGE_DAYS = 3       # Automatically purge news older than 3 days
+MAX_ITEMS_TO_KEEP = 30  # Keep top 30 freshest articles for low memory / bandwidth
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'si,en-US;q=0.9,en;q=0.8',
 }
+
+session = requests.Session()
+session.headers.update(HEADERS)
+
+def get_now_sl():
+    return datetime.now(SL_TIMEZONE)
+
+def parse_published_at(date_str):
+    """
+    Parses 'YYYY-MM-DD HH:MM:SS' string into a timezone-aware datetime.
+    """
+    if not date_str:
+        return None
+    try:
+        dt = datetime.strptime(date_str.strip(), "%Y-%m-%d %H:%M:%S")
+        return dt.replace(tzinfo=SL_TIMEZONE)
+    except Exception:
+        return None
 
 def clean_text(text):
     if not text:
@@ -24,27 +51,66 @@ def clean_text(text):
     text = html.unescape(text)
     text = re.sub(r'<[^>]+>', '', text)
     text = re.sub(r'^Share\s*', '', text)
+    text = re.sub(r'Listen to this Audio\s*(?:AI Generated)?', '', text, flags=re.I)
     text = text.replace('\xa0', ' ').strip()
     return text
 
-def fetch_url(url):
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.read().decode('utf-8', errors='ignore')
+def fetch_rss_feed():
+    for url in [PRIMARY_RSS_URL, FALLBACK_RSS_URL]:
+        try:
+            resp = session.get(url, timeout=15)
+            if resp.status_code == 200 and resp.text:
+                return resp.text
+        except Exception as e:
+            print(f"Warning: Failed to fetch RSS from {url}: {e}")
+    return None
 
 def load_existing_news():
     if os.path.exists(NEWS_JSON_FILE):
         try:
             with open(NEWS_JSON_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
         except Exception as e:
             print(f"Warning: Could not read {NEWS_JSON_FILE}: {e}")
     return []
 
+def purge_old_news(articles):
+    """
+    Filters out news older than MAX_AGE_DAYS and test/invalid news items.
+    """
+    now = get_now_sl()
+    cutoff_time = now - timedelta(days=MAX_AGE_DAYS)
+    fresh_articles = []
+
+    for item in articles:
+        # Ignore test/dummy articles without valid numeric ID or title
+        item_id = str(item.get("id", "")).strip()
+        title = item.get("title", "").strip()
+        if not item_id or not item_id.isdigit() or len(title) < 5:
+            continue
+
+        pub_dt = parse_published_at(item.get("published_at"))
+        if pub_dt is None:
+            # If no date, use current time
+            pub_dt = now
+            item["published_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        if pub_dt >= cutoff_time:
+            fresh_articles.append(item)
+
+    # Sort descending by numeric ID for strict chronological order
+    fresh_articles.sort(
+        key=lambda x: int(x["id"]) if str(x.get("id", "")).isdigit() else 0,
+        reverse=True
+    )
+    return fresh_articles[:MAX_ITEMS_TO_KEEP]
+
 def send_push_notification(article):
     """
-    Sends Firebase FCM notification using GitHub Secret: FIREBASE_SERVICE_ACCOUNT
-    If not provided, skips gracefully without error.
+    Sends Firebase FCM notification using GitHub Secret: FIREBASE_SERVICE_ACCOUNT.
+    Skips gracefully if not configured.
     """
     firebase_creds_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
     if not firebase_creds_json:
@@ -60,12 +126,10 @@ def send_push_notification(article):
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
 
-        # Truncate summary if too long for notification drawer
-        body_text = article["summary"]
+        body_text = article.get("summary") or article.get("title", "")
         if len(body_text) > 120:
             body_text = body_text[:117] + "..."
 
-        # Build FCM notification
         notification = messaging.Notification(
             title=f"🔴 {article['title']}",
             body=body_text,
@@ -76,10 +140,10 @@ def send_push_notification(article):
             notification=notification,
             data={
                 "news_id": str(article["id"]),
-                "category": article["category"],
+                "category": article.get("category", "පුවත්"),
                 "click_action": "FLUTTER_NOTIFICATION_CLICK"
             },
-            topic="news"  # Clients subscribe to topic 'news'
+            topic="news"
         )
 
         response = messaging.send(message)
@@ -89,21 +153,30 @@ def send_push_notification(article):
         print(f"Error sending Firebase notification: {e}")
 
 def run():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting News Auto-Update...")
-    
-    existing_news = load_existing_news()
-    existing_ids = {str(item["id"]) for item in existing_news}
-    print(f"Found {len(existing_news)} existing news items in {NEWS_JSON_FILE}.")
+    now_sl = get_now_sl()
+    print(f"[{now_sl.strftime('%Y-%m-%d %H:%M:%S')} SLST] Starting News Auto-Update...")
 
-    print("Fetching live RSS feed...")
+    existing_raw = load_existing_news()
+    existing_news = purge_old_news(existing_raw)
+    existing_ids = {str(item["id"]) for item in existing_news}
+    print(f"Loaded {len(existing_news)} active (non-expired) news items from {NEWS_JSON_FILE}.")
+
+    rss_xml = fetch_rss_feed()
+    if not rss_xml:
+        print("Error: Could not retrieve live RSS feed. Exiting.")
+        return
+
     try:
-        rss_xml = fetch_url(RSS_URL)
         root = ET.fromstring(rss_xml)
     except Exception as e:
-        print(f"Error fetching RSS: {e}")
+        print(f"Error parsing RSS XML: {e}")
         return
 
     channel = root.find("channel")
+    if channel is None:
+        print("Error: Invalid RSS feed format (missing channel).")
+        return
+
     items = channel.findall("item")
     print(f"Total items in RSS feed: {len(items)}")
 
@@ -117,17 +190,22 @@ def run():
 
     newly_added = []
 
-    # Process items from newest to oldest
     for item in items:
-        link = item.find("link").text.strip() if item.find("link") is not None else ""
+        link_elem = item.find("link")
+        link = link_elem.text.strip() if link_elem is not None and link_elem.text else ""
         id_match = re.search(r'/news/(\d+)', link)
         news_id = id_match.group(1) if id_match else ""
 
         if not news_id or news_id in existing_ids:
-            continue  # Already exists, skip!
+            continue
 
-        title = clean_text(item.find("title").text) if item.find("title") is not None else ""
-        raw_cat = item.find("category").text.strip() if item.find("category") is not None else "hot-news"
+        title_elem = item.find("title")
+        title = clean_text(title_elem.text) if title_elem is not None and title_elem.text else ""
+        if not title:
+            continue
+
+        cat_elem = item.find("category")
+        raw_cat = cat_elem.text.strip() if cat_elem is not None and cat_elem.text else "hot-news"
         category = category_map.get(raw_cat, 'දේශීය පුවත්')
 
         print(f"==> NEW ARTICLE FOUND: [{news_id}] {title}")
@@ -136,27 +214,28 @@ def run():
         full_paragraphs = []
 
         try:
-            article_html = fetch_url(link)
+            article_resp = session.get(link, timeout=12)
+            if article_resp.status_code == 200:
+                article_html = article_resp.text
 
-            # 1. Image
-            img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
-            if img_match:
-                image_url = img_match.group(1).strip()
+                # 1. Image
+                img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
+                if img_match:
+                    image_url = img_match.group(1).strip()
 
-            # 2. Summary
-            desc_match = re.search(r'property=["\']og:description["\'] content=["\']([^"\']+)["\']', article_html)
-            if desc_match:
-                summary = clean_text(desc_match.group(1))
+                # 2. Summary
+                desc_match = re.search(r'property=["\']og:description["\'] content=["\']([^"\']+)["\']', article_html)
+                if desc_match:
+                    summary = clean_text(desc_match.group(1))
 
-            # 3. Clean article body from <article>
-            article_match = re.search(r'<article[^>]*>([\s\S]*?)</article>', article_html)
-            if article_match:
-                p_tags = re.findall(r'<p[^>]*>([\s\S]*?)</p>', article_match.group(1))
-                for p in p_tags:
-                    cleaned_p = clean_text(p)
-                    if len(cleaned_p) > 10 and not cleaned_p.lower().startswith('add ada derana'):
-                        full_paragraphs.append(cleaned_p)
-
+                # 3. Clean article body from <article>
+                article_match = re.search(r'<article[^>]*>([\s\S]*?)</article>', article_html)
+                if article_match:
+                    p_tags = re.findall(r'<p[^>]*>([\s\S]*?)</p>', article_match.group(1))
+                    for p in p_tags:
+                        cleaned_p = clean_text(p)
+                        if len(cleaned_p) > 10 and not cleaned_p.lower().startswith('add ada derana'):
+                            full_paragraphs.append(cleaned_p)
         except Exception as e:
             print(f"Error parsing article {news_id}: {e}")
 
@@ -173,7 +252,7 @@ def run():
             "summary": summary,
             "content": full_content,
             "image_url": image_url,
-            "published_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "published_at": get_now_sl().strftime("%Y-%m-%d %H:%M:%S"),
             "source_name": "Ada Derana",
             "source_url": link
         }
@@ -181,22 +260,21 @@ def run():
         newly_added.append(article_obj)
         existing_ids.add(news_id)
 
-    if newly_added:
-        print(f"Adding {len(newly_added)} new article(s) to {NEWS_JSON_FILE}...")
-        updated_list = newly_added + existing_news
-        # Keep latest MAX_ITEMS_TO_KEEP
-        updated_list = updated_list[:MAX_ITEMS_TO_KEEP]
+    combined_list = newly_added + existing_news
+    final_list = purge_old_news(combined_list)
 
+    if newly_added or len(final_list) != len(existing_raw):
+        print(f"Writing {len(final_list)} articles into {NEWS_JSON_FILE} (Added: {len(newly_added)})...")
         with open(NEWS_JSON_FILE, "w", encoding="utf-8") as f:
-            json.dump(updated_list, f, ensure_ascii=False, indent=2)
+            json.dump(final_list, f, ensure_ascii=False, indent=2)
 
-        print(f"Successfully saved {len(updated_list)} total articles into {NEWS_JSON_FILE}.")
+        print(f"Successfully saved {len(final_list)} total articles into {NEWS_JSON_FILE}.")
 
-        # Send push notification for the newest breaking news item
-        latest_article = newly_added[0]
-        send_push_notification(latest_article)
+        if newly_added:
+            latest_article = newly_added[0]
+            send_push_notification(latest_article)
     else:
-        print("No new articles at this moment. news.json is up to date.")
+        print("No changes. news.json is fresh and up-to-date.")
 
 if __name__ == "__main__":
     run()
