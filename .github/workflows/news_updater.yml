@@ -2,8 +2,8 @@ name: Auto Update News & Push Alerts
 
 on:
   schedule:
-    # Runs every 20 minutes automatically
-    - cron: '*/20 * * * *'
+    # Runs every 5 minutes automatically
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     # Allows you to manually trigger it anytime via GitHub Actions button
 

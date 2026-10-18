@@ -59,9 +59,28 @@ def fetch_rss_feed():
     for url in [PRIMARY_RSS_URL, FALLBACK_RSS_URL]:
         try:
             resp = session.get(url, timeout=15)
-            if resp.status_code == 200 and resp.text:
-                return resp.text
-        except Exception as e:
+            if resp.status_code != 200:
+                print(f"Warning: RSS request from {url} returned HTTP {resp.status_code}.")
+                continue
+            if not resp.text.strip():
+                print(f"Warning: RSS response from {url} was empty.")
+                continue
+
+            try:
+                root = ET.fromstring(resp.text)
+            except ET.ParseError as e:
+                print(f"Warning: RSS response from {url} is not valid XML: {e}")
+                continue
+
+            channel = root.find("channel")
+            if channel is None:
+                print(f"Warning: RSS response from {url} is missing a channel.")
+                continue
+            if not channel.findall("item"):
+                print(f"Warning: RSS response from {url} contains no items.")
+                continue
+            return root
+        except requests.RequestException as e:
             print(f"Warning: Failed to fetch RSS from {url}: {e}")
     return None
 
@@ -140,6 +159,7 @@ def send_push_notification(article):
             notification=notification,
             data={
                 "news_id": str(article["id"]),
+                "title": article["title"],
                 "category": article.get("category", "පුවත්"),
                 "click_action": "FLUTTER_NOTIFICATION_CLICK"
             },
@@ -161,23 +181,16 @@ def run():
     existing_ids = {str(item["id"]) for item in existing_news}
     print(f"Loaded {len(existing_news)} active (non-expired) news items from {NEWS_JSON_FILE}.")
 
-    rss_xml = fetch_rss_feed()
-    if not rss_xml:
-        print("Error: Could not retrieve live RSS feed. Exiting.")
-        return
-
-    try:
-        root = ET.fromstring(rss_xml)
-    except Exception as e:
-        print(f"Error parsing RSS XML: {e}")
-        return
-
+    root = fetch_rss_feed()
+    if root is None:
+        raise SystemExit("Error: Both RSS feeds failed validation; no usable feed was found.")
     channel = root.find("channel")
     if channel is None:
-        print("Error: Invalid RSS feed format (missing channel).")
-        return
+        raise SystemExit("Error: Selected RSS feed is malformed (missing channel).")
 
     items = channel.findall("item")
+    if not items:
+        raise SystemExit("Error: Selected RSS feed is malformed (missing items).")
     print(f"Total items in RSS feed: {len(items)}")
 
     category_map = {
