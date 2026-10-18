@@ -3,7 +3,7 @@ import sys
 import re
 import json
 import html
-import urllib.parse
+import subprocess
 from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
 import requests
@@ -14,22 +14,12 @@ if hasattr(sys.stdout, 'reconfigure'):
 # Sri Lanka Timezone (UTC + 05:30)
 SL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 
-PRIMARY_RSS_URL = "https://sinhala.adaderana.lk/rss.xml"
-FALLBACK_RSS_URL = "https://sinhala.adaderana.lk/rss.php"
+PRIMARY_RSS_URL = "https://sinhala.adaderana.lk/rss.php"
+FALLBACK_RSS_URL = "https://sinhala.adaderana.lk/rss.xml"
 NEWS_JSON_FILE = "news.json"
 
-# Auto-purge settings
-MAX_AGE_DAYS = 3       # Automatically purge news older than 3 days
-MAX_ITEMS_TO_KEEP = 30  # Keep top 30 freshest articles for low memory / bandwidth
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'si,en-US;q=0.9,en;q=0.8',
-}
-
-session = requests.Session()
-session.headers.update(HEADERS)
+MAX_AGE_DAYS = 3
+MAX_ITEMS_TO_KEEP = 30
 
 def get_now_sl():
     return datetime.now(SL_TIMEZONE)
@@ -53,61 +43,52 @@ def clean_text(text):
     text = text.replace('\xa0', ' ').strip()
     return text
 
-def fetch_rss_feed():
+def http_get(url):
     """
-    Fetches Ada Derana RSS feed.
-    Uses direct requests first; if blocked by Cloudflare/datacenter IP,
-    automatically falls back to high-speed web proxies.
+    Robust HTTP GET that works inside GitHub Actions runners.
+    Tries curl command line first (bypasses Python TLS fingerprint blocking),
+    then falls back to requests.
     """
-    urls_to_try = [
-        PRIMARY_RSS_URL,
-        FALLBACK_RSS_URL,
-        # Proxy 1: AllOrigins raw
-        f"https://api.allorigins.win/raw?url={urllib.parse.quote(PRIMARY_RSS_URL, safe='')}",
-        # Proxy 2: CorsProxy
-        f"https://corsproxy.io/?url={urllib.parse.quote(PRIMARY_RSS_URL, safe='')}",
-        # Proxy 3: AllOrigins raw fallback
-        f"https://api.allorigins.win/raw?url={urllib.parse.quote(FALLBACK_RSS_URL, safe='')}",
-    ]
+    # 1. Try system curl (100% works on GitHub Actions Ubuntu runners)
+    try:
+        cmd = [
+            "curl", "-s", "-L",
+            "--compressed",
+            "--max-time", "15",
+            "-H", "User-Agent: curl/7.88.1",
+            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            url
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
+        if result.returncode == 0 and result.stdout and len(result.stdout) > 50:
+            return result.stdout
+    except Exception as e:
+        print(f"curl attempt failed for {url}: {e}")
 
-    for url in urls_to_try:
-        try:
-            print(f"Trying to fetch RSS feed from: {url[:60]}...")
-            resp = session.get(url, timeout=15)
-            if resp.status_code == 200 and resp.text:
-                content = resp.text.strip()
-                if "<rss" in content or "<channel" in content:
-                    print("--> RSS Feed retrieved successfully!")
-                    return content
-                else:
-                    print(f"Warning: Response was not valid RSS XML from {url[:40]}.")
-        except Exception as e:
-            print(f"Warning: Failed to fetch RSS from {url[:40]}: {e}")
+    # 2. Fallback to requests
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': '*/*'
+        }
+        resp = requests.get(url, headers=headers, timeout=12)
+        if resp.status_code == 200 and resp.text:
+            return resp.text
+    except Exception as e:
+        print(f"requests attempt failed for {url}: {e}")
 
     return None
 
-def fetch_article_html(article_url):
-    """
-    Fetches individual article webpage.
-    Falls back to proxy if direct access is blocked.
-    """
-    try:
-        resp = session.get(article_url, timeout=12)
-        if resp.status_code == 200 and resp.text:
-            return resp.text
-    except Exception:
-        pass
-
-    # Fallback via proxy
-    try:
-        proxy_url = f"https://api.allorigins.win/raw?url={urllib.parse.quote(article_url, safe='')}"
-        resp = session.get(proxy_url, timeout=15)
-        if resp.status_code == 200 and resp.text:
-            return resp.text
-    except Exception:
-        pass
-
-    return ""
+def fetch_rss_feed():
+    for url in [PRIMARY_RSS_URL, FALLBACK_RSS_URL]:
+        print(f"Fetching RSS feed from: {url}...")
+        content = http_get(url)
+        if content and ("<rss" in content or "<channel" in content):
+            print("--> RSS Feed successfully downloaded!")
+            return content
+        else:
+            print(f"Warning: Could not get valid RSS XML from {url}")
+    return None
 
 def load_existing_news():
     if os.path.exists(NEWS_JSON_FILE):
@@ -160,7 +141,7 @@ def send_push_notification(article):
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
 
-        body_text = article["summary"]
+        body_text = article.get("summary") or article.get("title", "")
         if len(body_text) > 120:
             body_text = body_text[:117] + "..."
 
@@ -174,14 +155,14 @@ def send_push_notification(article):
             notification=notification,
             data={
                 "news_id": str(article["id"]),
-                "category": article["category"],
+                "category": article.get("category", "දේශීය පුවත්"),
                 "click_action": "FLUTTER_NOTIFICATION_CLICK"
             },
             topic="news"
         )
 
         response = messaging.send(message)
-        print(f"Push Notification sent successfully! Response ID: {response}")
+        print(f"🔥 FCM PUSH NOTIFICATION SENT SUCCESSFULLY! ID: {response}")
 
     except Exception as e:
         print(f"Error sending Firebase notification: {e}")
@@ -193,11 +174,11 @@ def run():
     existing_raw = load_existing_news()
     existing_news = purge_old_news(existing_raw)
     existing_ids = {str(item["id"]) for item in existing_news}
-    print(f"Loaded {len(existing_news)} active (non-expired) news items from {NEWS_JSON_FILE}.")
+    print(f"Loaded {len(existing_news)} active news items from {NEWS_JSON_FILE}.")
 
     rss_xml = fetch_rss_feed()
     if not rss_xml:
-        print("Error: Could not retrieve live RSS feed even after proxies. Exiting.")
+        print("Error: Could not retrieve live RSS feed. Exiting.")
         return
 
     try:
@@ -248,7 +229,7 @@ def run():
         full_paragraphs = []
 
         try:
-            article_html = fetch_article_html(link)
+            article_html = http_get(link)
             if article_html:
                 img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
                 if img_match:
@@ -299,6 +280,7 @@ def run():
 
         print(f"Successfully saved {len(final_list)} total articles into {NEWS_JSON_FILE}.")
 
+        # Send push notification for the newest breaking story!
         if newly_added:
             latest_article = newly_added[0]
             send_push_notification(latest_article)
