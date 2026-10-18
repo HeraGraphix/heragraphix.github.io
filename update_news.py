@@ -3,6 +3,7 @@ import sys
 import re
 import json
 import html
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
 import requests
@@ -22,7 +23,7 @@ MAX_AGE_DAYS = 3       # Automatically purge news older than 3 days
 MAX_ITEMS_TO_KEEP = 30  # Keep top 30 freshest articles for low memory / bandwidth
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'si,en-US;q=0.9,en;q=0.8',
 }
@@ -53,14 +54,60 @@ def clean_text(text):
     return text
 
 def fetch_rss_feed():
-    for url in [PRIMARY_RSS_URL, FALLBACK_RSS_URL]:
+    """
+    Fetches Ada Derana RSS feed.
+    Uses direct requests first; if blocked by Cloudflare/datacenter IP,
+    automatically falls back to high-speed web proxies.
+    """
+    urls_to_try = [
+        PRIMARY_RSS_URL,
+        FALLBACK_RSS_URL,
+        # Proxy 1: AllOrigins raw
+        f"https://api.allorigins.win/raw?url={urllib.parse.quote(PRIMARY_RSS_URL, safe='')}",
+        # Proxy 2: CorsProxy
+        f"https://corsproxy.io/?url={urllib.parse.quote(PRIMARY_RSS_URL, safe='')}",
+        # Proxy 3: AllOrigins raw fallback
+        f"https://api.allorigins.win/raw?url={urllib.parse.quote(FALLBACK_RSS_URL, safe='')}",
+    ]
+
+    for url in urls_to_try:
         try:
+            print(f"Trying to fetch RSS feed from: {url[:60]}...")
             resp = session.get(url, timeout=15)
             if resp.status_code == 200 and resp.text:
-                return resp.text
+                content = resp.text.strip()
+                if "<rss" in content or "<channel" in content:
+                    print("--> RSS Feed retrieved successfully!")
+                    return content
+                else:
+                    print(f"Warning: Response was not valid RSS XML from {url[:40]}.")
         except Exception as e:
-            print(f"Warning: Failed to fetch RSS from {url}: {e}")
+            print(f"Warning: Failed to fetch RSS from {url[:40]}: {e}")
+
     return None
+
+def fetch_article_html(article_url):
+    """
+    Fetches individual article webpage.
+    Falls back to proxy if direct access is blocked.
+    """
+    try:
+        resp = session.get(article_url, timeout=12)
+        if resp.status_code == 200 and resp.text:
+            return resp.text
+    except Exception:
+        pass
+
+    # Fallback via proxy
+    try:
+        proxy_url = f"https://api.allorigins.win/raw?url={urllib.parse.quote(article_url, safe='')}"
+        resp = session.get(proxy_url, timeout=15)
+        if resp.status_code == 200 and resp.text:
+            return resp.text
+    except Exception:
+        pass
+
+    return ""
 
 def load_existing_news():
     if os.path.exists(NEWS_JSON_FILE):
@@ -150,7 +197,7 @@ def run():
 
     rss_xml = fetch_rss_feed()
     if not rss_xml:
-        print("Error: Could not retrieve live RSS feed. Exiting.")
+        print("Error: Could not retrieve live RSS feed even after proxies. Exiting.")
         return
 
     try:
@@ -201,10 +248,8 @@ def run():
         full_paragraphs = []
 
         try:
-            art_resp = session.get(link, timeout=12)
-            if art_resp.status_code == 200:
-                article_html = art_resp.text
-
+            article_html = fetch_article_html(link)
+            if article_html:
                 img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
                 if img_match:
                     image_url = img_match.group(1).strip()
