@@ -34,9 +34,6 @@ def get_now_sl():
     return datetime.now(SL_TIMEZONE)
 
 def parse_published_at(date_str):
-    """
-    Parses 'YYYY-MM-DD HH:MM:SS' string into a timezone-aware datetime.
-    """
     if not date_str:
         return None
     try:
@@ -77,15 +74,11 @@ def load_existing_news():
     return []
 
 def purge_old_news(articles):
-    """
-    Filters out news older than MAX_AGE_DAYS and test/invalid news items.
-    """
     now = get_now_sl()
     cutoff_time = now - timedelta(days=MAX_AGE_DAYS)
     fresh_articles = []
 
     for item in articles:
-        # Ignore test/dummy articles without valid numeric ID or title
         item_id = str(item.get("id", "")).strip()
         title = item.get("title", "").strip()
         if not item_id or not item_id.isdigit() or len(title) < 5:
@@ -93,14 +86,12 @@ def purge_old_news(articles):
 
         pub_dt = parse_published_at(item.get("published_at"))
         if pub_dt is None:
-            # If no date, use current time
             pub_dt = now
             item["published_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
 
         if pub_dt >= cutoff_time:
             fresh_articles.append(item)
 
-    # Sort descending by numeric ID for strict chronological order
     fresh_articles.sort(
         key=lambda x: int(x["id"]) if str(x.get("id", "")).isdigit() else 0,
         reverse=True
@@ -108,10 +99,6 @@ def purge_old_news(articles):
     return fresh_articles[:MAX_ITEMS_TO_KEEP]
 
 def send_push_notification(article):
-    """
-    Sends Firebase FCM notification using GitHub Secret: FIREBASE_SERVICE_ACCOUNT.
-    Skips gracefully if not configured.
-    """
     firebase_creds_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
     if not firebase_creds_json:
         print("Note: FIREBASE_SERVICE_ACCOUNT secret not found. Skipping push notification.")
@@ -126,7 +113,7 @@ def send_push_notification(article):
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
 
-        body_text = article.get("summary") or article.get("title", "")
+        body_text = article["summary"]
         if len(body_text) > 120:
             body_text = body_text[:117] + "..."
 
@@ -140,7 +127,7 @@ def send_push_notification(article):
             notification=notification,
             data={
                 "news_id": str(article["id"]),
-                "category": article.get("category", "පුවත්"),
+                "category": article["category"],
                 "click_action": "FLUTTER_NOTIFICATION_CLICK"
             },
             topic="news"
@@ -214,21 +201,18 @@ def run():
         full_paragraphs = []
 
         try:
-            article_resp = session.get(link, timeout=12)
-            if article_resp.status_code == 200:
-                article_html = article_resp.text
+            art_resp = session.get(link, timeout=12)
+            if art_resp.status_code == 200:
+                article_html = art_resp.text
 
-                # 1. Image
                 img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
                 if img_match:
                     image_url = img_match.group(1).strip()
 
-                # 2. Summary
                 desc_match = re.search(r'property=["\']og:description["\'] content=["\']([^"\']+)["\']', article_html)
                 if desc_match:
                     summary = clean_text(desc_match.group(1))
 
-                # 3. Clean article body from <article>
                 article_match = re.search(r'<article[^>]*>([\s\S]*?)</article>', article_html)
                 if article_match:
                     p_tags = re.findall(r'<p[^>]*>([\s\S]*?)</p>', article_match.group(1))
