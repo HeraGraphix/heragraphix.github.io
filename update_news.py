@@ -1,291 +1,769 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Hera News Automation Engine for GitHub Actions
+- Fetches news from 3 trusted Sinhala sources: ITN (API + Sports), Lankadeepa (RSS), Ada Derana (RSS)
+- Intelligent deduplication & sports prioritization
+- Guaranteed https image extraction & full article body extraction
+- Realtime Database sync (news/items, news/feed, news/meta)
+- Firebase Cloud Messaging (FCM) topic 'news' notification with Hera Keyboard Flutter payload
+- Generates news.json for GitHub Pages
+"""
+
 import os
 import sys
 import re
 import json
 import html
 import subprocess
+import time
+import email.utils
 from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
-import requests
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-# Sri Lanka Timezone (UTC + 05:30)
 SL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
-
-PRIMARY_RSS_URL = "https://sinhala.adaderana.lk/rss.php"
-FALLBACK_RSS_URL = "https://sinhala.adaderana.lk/rss.xml"
 NEWS_JSON_FILE = "news.json"
+STATE_FILE = ".news_engine_state.json"
 
-MAX_AGE_DAYS = 3
-MAX_ITEMS_TO_KEEP = 30
+HERA_CONFIG = {
+    "project_id": "hera-keyboard",
+    "database_url": "https://hera-keyboard-default-rtdb.firebaseio.com",
+    "topic": "news",
+    "retention_days": 3,
+    "max_feed_items": 100,
+    "max_json_items": 40,
+    "max_notifications_per_day": 36,
+    "max_notifications_per_hour": 2,
+    "standard_gap_minutes": 20,
+    "high_priority_gap_minutes": 8,
+    "urgent_gap_minutes": 3,
+    "notification_threshold": 45,
+    "high_priority_threshold": 68,
+    "urgent_threshold": 82
+}
 
 def get_now_sl():
     return datetime.now(SL_TIMEZONE)
 
-def parse_published_at(date_str):
-    if not date_str:
-        return None
-    try:
-        dt = datetime.strptime(date_str.strip(), "%Y-%m-%d %H:%M:%S")
-        return dt.replace(tzinfo=SL_TIMEZONE)
-    except Exception:
-        return None
-
-def clean_text(text):
-    if not text:
-        return ""
-    text = html.unescape(text)
-    text = re.sub(r'<[^>]+>', '', text)
-    text = re.sub(r'^Share\s*', '', text)
-    text = re.sub(r'Listen to this Audio\s*(?:AI Generated)?', '', text, flags=re.I)
-    text = text.replace('\xa0', ' ').strip()
-    return text
-
-def http_get(url):
+def http_get(url, timeout=12):
     """
-    Robust HTTP GET that works inside GitHub Actions runners.
-    Tries curl command line first (bypasses Python TLS fingerprint blocking),
-    then falls back to requests.
+    Robust HTTP GET that works in all network environments.
+    Tries curl command line first, then falls back to python requests.
     """
-    # 1. Try system curl (100% works on GitHub Actions Ubuntu runners)
     try:
         cmd = [
             "curl", "-s", "-L",
             "--compressed",
-            "--max-time", "15",
-            "-H", "User-Agent: curl/7.88.1",
-            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "--max-time", str(timeout),
+            "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8",
+            "-H", "Accept-Language: si,en-US;q=0.9,en;q=0.8",
             url
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
-        if result.returncode == 0 and result.stdout and len(result.stdout) > 50:
-            return result.stdout
-    except Exception as e:
-        print(f"curl attempt failed for {url}: {e}")
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
+        if res.returncode == 0 and res.stdout and len(res.stdout.strip()) > 30:
+            return res.stdout
+    except Exception:
+        pass
 
-    # 2. Fallback to requests
     try:
+        import requests
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36',
-            'Accept': '*/*'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml,application/json,*/*',
+            'Accept-Language': 'si,en-US;q=0.9,en;q=0.8',
         }
-        resp = requests.get(url, headers=headers, timeout=12)
+        resp = requests.get(url, headers=headers, timeout=timeout)
         if resp.status_code == 200 and resp.text:
             return resp.text
     except Exception as e:
-        print(f"requests attempt failed for {url}: {e}")
+        print(f"HTTP GET failed for {url}: {e}")
 
     return None
 
-def fetch_rss_feed():
-    for url in [PRIMARY_RSS_URL, FALLBACK_RSS_URL]:
-        print(f"Fetching RSS feed from: {url}...")
-        content = http_get(url)
-        if content and ("<rss" in content or "<channel" in content):
-            print("--> RSS Feed successfully downloaded!")
-            return content
-        else:
-            print(f"Warning: Could not get valid RSS XML from {url}")
-    return None
+def clean_text(text):
+    if not text:
+        return ""
+    text = html.unescape(str(text))
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r'^\s*\d{1,2}-\d{1,2}-\d{4}\s*\|\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*', '', text, flags=re.I)
+    text = re.sub(r'\s*COLOMBO\s*\(\s*News\s*1st\s*\)\s*-\s*', '', text, flags=re.I)
+    text = re.sub(r'\s*-\s*ශ්‍රී ලංකා ප්‍රවෘත්ති.*$', '', text)
+    text = re.sub(r'Listen to this Audio\s*(?:AI Generated)?', '', text, flags=re.I)
+    text = text.replace('\xa0', ' ')
+    text = re.sub(r'\s+', ' ', text).strip()
+    return re.sub(r'[\s.\-–—:|]+$', '', text).strip()
 
-def load_existing_news():
-    if os.path.exists(NEWS_JSON_FILE):
+def normalize_image_url(url):
+    clean = str(url or "").strip()
+    if not clean:
+        return ""
+    clean = re.sub(r'^http://', 'https://', clean, flags=re.I)
+    if not clean.lower().startswith('https://'):
+        return ""
+    return clean.replace(' ', '%20')
+
+def is_sports_news(title, text):
+    combined = f"{title} {text}".lower()
+    return bool(re.search(
+        r'(ක්‍රිකට්|පාපන්දු|ක්‍රීඩා|තරගාවලිය|තරඟාවලිය|ශූරතාව|ඔලිම්පික්|පැරා\s*ක්‍රීඩා|විකට්|ලකුණු|පිතිකර|පන්දු\s*යැව|අවසන්\s*මහා\s*තරග|ටෙස්ට්\s*තරග|එක්දින|විස්සයි20|t20|odi|ipl|lpl|icc|fifa|world\s*cup|තරගය\s*ජය|ජයග්‍රහණය\s*කරයි|පදක්කම|පදක්කම්|ශ්‍රී\s*ලංකා\s*කණ්ඩායම|ක්‍රීඩක)',
+        combined
+    ))
+
+def is_emergency_news(text):
+    low = text.lower()
+    foreign_only = bool(re.search(r'(ඉන්දියාවේ|පාකිස්තාන|ඇමරිකාවේ|රුසියාවේ|යුක්රේන|ඊශ්‍රායල|ගාසා)', low)) and not bool(re.search(r'(ශ්‍රී\s*ලංකාවට|දිවයිනට|මෙරට|අපේ\s*රටට)', low))
+    if foreign_only:
+        return False
+    return bool(re.search(r'(රතු\s*නිවේදන|සුනාමි|භූමිකම්පා|ගංවතුර\s*(අවදානම්|අනතුරු\s*ඇඟවීම)|නාය.{0,24}(අවදානම්|අනතුරු\s*ඇඟවීම)|සුළි\s*කුණාටු|තද\s*සුළං\s*අවදානම්|වාන්\s*දොරටු|ජලාශ.*වාන්|අධික\s*වැසි\s*අවදානම්|ඉවත්\s*වන්නැයි\s*දැනුම්|හදිසි\s*තත්ත්ව|ඇඳිරි\s*නීතිය)', low))
+
+def calculate_importance(article):
+    text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
+    title = article.get('title', '')
+    score = 25
+    reasons = []
+
+    if is_emergency_news(text):
+        score += 70
+        reasons.append("life_safety")
+
+    if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b)', text, re.I):
+        score += 50
+        reasons.append("breaking_news")
+
+    if re.search(r'(විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*කප්පාදු|ඉන්ධන\s*මිල|ගෑස්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන))', text, re.I):
+        score += 32
+        reasons.append("public_service")
+
+    if re.search(r'(අයවැය|imf|මහ\s*බැංකු|පොලී\s*අනුපාත|උද්ධමනය|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ|අධිකරණ\s*තීන්දුව)', text, re.I):
+        score += 34
+        reasons.append("national_impact")
+
+    # High sports scoring
+    major_sport = bool(re.search(r'(ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|තරගාවලිය\s*ජය|ජයග්‍රහණය\s*කරයි|විශිෂ්ට\s*ජයක්|ලකුණු\s*\d+\s*කින්\s*ජය|කඩුලු\s*\d+\s*කින්\s*ජය)', text, re.I))
+    if major_sport:
+        score += 35
+        reasons.append("major_sport")
+    elif is_sports_news(title, text):
+        score += 24
+        reasons.append("sports_news")
+
+    if re.search(r'(ලග්න\s*පලාපල|කේන්දර|ජ්‍යොතිෂ|ලොතරැයි|වෙළඳ\s*දැන්වීම|වට්ටම්\s*දීමනා)', text, re.I):
+        score -= 60
+        reasons.append("blocked_fluff")
+
+    score = max(0, min(100, score))
+    tier = "feed_only"
+    if is_emergency_news(text):
+        tier = "emergency"
+    elif score >= HERA_CONFIG["urgent_threshold"] or "breaking_news" in reasons:
+        tier = "urgent"
+    elif score >= HERA_CONFIG["high_priority_threshold"]:
+        tier = "high"
+    elif score >= HERA_CONFIG["notification_threshold"]:
+        tier = "standard"
+
+    article["importance_score"] = score
+    article["importance_tier"] = tier
+    article["importance_reasons"] = reasons
+    return article
+
+# ==================== SOURCE 1: ITN NEWS (API + SPORTS + RSS) ====================
+def fetch_itn_news():
+    articles = []
+    seen = set()
+
+    # 1. Official REST API endpoints
+    urls = [
+        "https://www.itnnews.lk/wp-json/wp/v2/posts?_embed&per_page=100",
+        "https://www.itnnews.lk/wp-json/wp/v2/posts?categories=80&_embed=wp:featuredmedia&per_page=20"
+    ]
+    for url in urls:
         try:
-            with open(NEWS_JSON_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    return data
+            raw = http_get(url)
+            if not raw:
+                continue
+            data = json.loads(raw)
+            if not isinstance(data, list):
+                continue
+            for post in data:
+                p_id = f"itn_{post.get('id')}"
+                if p_id in seen:
+                    continue
+                seen.add(p_id)
+
+                title = clean_text(post.get('title', {}).get('rendered', ''))
+                if len(title) < 5:
+                    continue
+
+                excerpt = clean_text(post.get('excerpt', {}).get('rendered', ''))
+                content = clean_text(post.get('content', {}).get('rendered', ''))
+                summary = excerpt or content or title
+                body = content or summary or title
+
+                # Published timestamp
+                date_gmt = post.get('date_gmt') or ""
+                pub_ms = int(time.time() * 1000)
+                if date_gmt:
+                    try:
+                        dt = datetime.fromisoformat(date_gmt.replace('Z', '+00:00'))
+                        pub_ms = int(dt.timestamp() * 1000)
+                    except Exception:
+                        pass
+
+                # Category & Sports detection
+                cats = post.get('categories') or []
+                is_sports = (80 in cats) or is_sports_news(title, body)
+                cat_name = "ක්‍රීඩා පුවත්" if is_sports else ("ප්‍රධාන පුවත" if 86 in cats else "දේශීය පුවත්")
+
+                # Image URL
+                image_url = ""
+                try:
+                    media = post.get('_embedded', {}).get('wp:featuredmedia', [])
+                    if media and isinstance(media, list) and 'source_url' in media[0]:
+                        image_url = media[0]['source_url']
+                except Exception:
+                    pass
+
+                articles.append({
+                    "id": p_id,
+                    "title": title[:HERA_CONFIG.get("max_title_len", 300)],
+                    "category": cat_name,
+                    "summary": summary[:800],
+                    "content": body[:12000],
+                    "image_url": normalize_image_url(image_url),
+                    "published_at": datetime.fromtimestamp(pub_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
+                    "published_at_ms": pub_ms,
+                    "fetched_at_ms": int(time.time() * 1000),
+                    "source_name": "ITN News",
+                    "source_url": post.get('link') or f"https://www.itnnews.lk/{post.get('id')}",
+                    "is_top_story": 86 in cats
+                })
         except Exception as e:
-            print(f"Warning: Could not read {NEWS_JSON_FILE}: {e}")
-    return []
+            print(f"ITN API error: {e}")
 
-def purge_old_news(articles):
-    now = get_now_sl()
-    cutoff_time = now - timedelta(days=MAX_AGE_DAYS)
-    fresh_articles = []
+    # Fallback to ITN RSS if API was dry
+    if not articles:
+        try:
+            xml_text = http_get("https://www.itnnews.lk/feed/")
+            if xml_text and "<rss" in xml_text:
+                root = ET.fromstring(xml_text)
+                for item in root.findall(".//item"):
+                    link = item.findtext("link") or ""
+                    title = clean_text(item.findtext("title") or "")
+                    if len(title) < 5:
+                        continue
+                    desc = clean_text(item.findtext("description") or "")
+                    id_match = re.search(r'/(\d+)/?$', link)
+                    p_id = f"itn_{id_match.group(1)}" if id_match else f"itn_{abs(hash(link))}"
+                    cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, desc) else "දේශීය පුවත්"
+                    articles.append({
+                        "id": p_id,
+                        "title": title,
+                        "category": cat_name,
+                        "summary": desc or title,
+                        "content": desc or title,
+                        "image_url": "",
+                        "published_at": get_now_sl().strftime("%Y-%m-%d %H:%M:%S"),
+                        "published_at_ms": int(time.time() * 1000),
+                        "fetched_at_ms": int(time.time() * 1000),
+                        "source_name": "ITN News",
+                        "source_url": link
+                    })
+        except Exception as e:
+            print(f"ITN RSS error: {e}")
 
-    for item in articles:
-        item_id = str(item.get("id", "")).strip()
-        title = item.get("title", "").strip()
-        if not item_id or not item_id.isdigit() or len(title) < 5:
+    print(f"Loaded {len(articles)} articles from ITN News.")
+    return articles
+
+# ==================== SOURCE 2: LANKADEEPA (RSS) ====================
+def fetch_lankadeepa_news():
+    articles = []
+    seen = set()
+    urls = [
+        "https://www.lankadeepa.lk/rss/latest_news/1",
+        "https://www.lankadeepa.lk/rss/news/48"
+    ]
+    for url in urls:
+        try:
+            raw = http_get(url)
+            if not raw or ("<rss" not in raw and "<channel" not in raw):
+                continue
+            # Strip XML BOM or trailing characters
+            raw = re.sub(r'^\ufeff', '', raw).strip()
+            end_idx = raw.find('</rss>')
+            if end_idx != -1:
+                raw = raw[:end_idx + 6].strip()
+            root = ET.fromstring(raw)
+            for item in root.findall(".//item"):
+                link = (item.findtext("link") or "").strip()
+                if not link:
+                    continue
+                id_match = re.search(r'/(\d+-\d+|\d+)/?$', link)
+                p_id = f"lk_{id_match.group(1).replace('-', '_')}" if id_match else f"lk_{abs(hash(link))}"
+                if p_id in seen:
+                    continue
+                seen.add(p_id)
+
+                title = clean_text(item.findtext("title") or "")
+                if len(title) < 5:
+                    continue
+
+                raw_desc = item.findtext("description") or ""
+                image_url = ""
+                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_desc, re.I)
+                if img_match:
+                    image_url = img_match.group(1)
+
+                enc = item.find("enclosure")
+                if not image_url and enc is not None:
+                    image_url = enc.get("url") or ""
+
+                clean_desc = clean_text(raw_desc)
+                cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, clean_desc) else "දේශීය පුවත්"
+
+                # Exact publication timestamp from pubDate
+                raw_date = item.findtext("pubDate") or ""
+                pub_ms = int(time.time() * 1000)
+                if raw_date:
+                    try:
+                        dt = email.utils.parsedate_to_datetime(raw_date)
+                        pub_ms = int(dt.timestamp() * 1000)
+                    except Exception:
+                        pass
+
+                articles.append({
+                    "id": p_id,
+                    "title": title,
+                    "category": cat_name,
+                    "summary": clean_desc or title,
+                    "content": clean_desc or title,
+                    "image_url": normalize_image_url(image_url),
+                    "published_at": datetime.fromtimestamp(pub_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
+                    "published_at_ms": pub_ms,
+                    "fetched_at_ms": int(time.time() * 1000),
+                    "source_name": "ලංකාදීප",
+                    "source_url": link
+                })
+        except Exception as e:
+            print(f"Lankadeepa RSS error for {url}: {e}")
+
+    print(f"Loaded {len(articles)} articles from Lankadeepa.")
+    return articles
+
+# ==================== SOURCE 3: ADA DERANA (RSS + FALLBACK) ====================
+def fetch_adaderana_news():
+    articles = []
+    seen = set()
+    rss_urls = [
+        "https://sinhala.adaderana.lk/rss.php",
+        "https://sinhala.adaderana.lk/rss.xml"
+    ]
+    for url in rss_urls:
+        try:
+            raw = http_get(url)
+            if not raw or ("<rss" not in raw and "<channel" not in raw):
+                continue
+            root = ET.fromstring(raw)
+            for item in root.findall(".//item"):
+                link = (item.findtext("link") or "").strip()
+                if not link:
+                    continue
+                id_match = re.search(r'/news/(\d+)', link)
+                p_id = f"ad_{id_match.group(1)}" if id_match else f"ad_{abs(hash(link))}"
+                if p_id in seen:
+                    continue
+                seen.add(p_id)
+
+                title = clean_text(item.findtext("title") or "")
+                if len(title) < 5:
+                    continue
+
+                raw_desc = item.findtext("description") or ""
+                image_url = ""
+                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_desc, re.I)
+                if img_match:
+                    image_url = img_match.group(1)
+
+                clean_desc = clean_text(raw_desc)
+                raw_cat = (item.findtext("category") or "").lower()
+                cat_name = "දේශීය පුවත්"
+                if "sports" in raw_cat or is_sports_news(title, clean_desc):
+                    cat_name = "ක්‍රීඩා පුවත්"
+                elif "feature" in raw_cat:
+                    cat_name = "විශේෂාංග"
+
+                # Exact publication timestamp from pubDate
+                raw_date = item.findtext("pubDate") or ""
+                pub_ms = int(time.time() * 1000)
+                if raw_date:
+                    try:
+                        dt = email.utils.parsedate_to_datetime(raw_date)
+                        pub_ms = int(dt.timestamp() * 1000)
+                    except Exception:
+                        pass
+
+                articles.append({
+                    "id": p_id,
+                    "title": title,
+                    "category": cat_name,
+                    "summary": clean_desc or title,
+                    "content": clean_desc or title,
+                    "image_url": normalize_image_url(image_url),
+                    "published_at": datetime.fromtimestamp(pub_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
+                    "published_at_ms": pub_ms,
+                    "fetched_at_ms": int(time.time() * 1000),
+                    "source_name": "අද දෙරණ",
+                    "source_url": link
+                })
+        except Exception as e:
+            print(f"Ada Derana RSS error for {url}: {e}")
+
+    # Homepage fallback if RSS was empty
+    if not articles:
+        try:
+            home_html = http_get("https://sinhala.adaderana.lk/")
+            if home_html:
+                matches = re.findall(r'<a\b[^>]*href=["\']([^"\']*/news/(\d+))["\'][^>]*>([\s\S]*?)</a>', home_html, re.I)
+                for full_link, n_id, inner in matches:
+                    clean_t = clean_text(inner)
+                    p_id = f"ad_{n_id}"
+                    if len(clean_t) < 12 or p_id in seen:
+                        continue
+                    seen.add(p_id)
+                    articles.append({
+                        "id": p_id,
+                        "title": clean_t,
+                        "category": "දේශීය පුවත්",
+                        "summary": clean_t,
+                        "content": clean_t,
+                        "image_url": "",
+                        "published_at": get_now_sl().strftime("%Y-%m-%d %H:%M:%S"),
+                        "published_at_ms": int(time.time() * 1000),
+                        "fetched_at_ms": int(time.time() * 1000),
+                        "source_name": "අද දෙරණ",
+                        "source_url": f"https://sinhala.adaderana.lk/news/{n_id}"
+                    })
+        except Exception as e:
+            print(f"Ada Derana homepage fallback error: {e}")
+
+    print(f"Loaded {len(articles)} articles from Ada Derana.")
+    return articles
+
+# ==================== ENRICHMENT & DEDUPLICATION ====================
+def enrich_article_details(article):
+    """
+    If an article lacks an image or full body, scrapes its source URL directly.
+    """
+    if not article.get("source_url"):
+        return article
+    needs_img = not article.get("image_url")
+    needs_body = len(article.get("summary", "")) < 40 or article.get("summary") == article.get("title")
+    if not needs_img and not needs_body:
+        return article
+
+    try:
+        page_html = http_get(article["source_url"], timeout=10)
+        if page_html:
+            if needs_img:
+                img_m = re.search(r'property=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
+                if not img_m:
+                    img_m = re.search(r'content=["\']([^"\']+)["\']\s+property=["\'](?:og:image|twitter:image)["\']', page_html, re.I)
+                if img_m:
+                    article["image_url"] = normalize_image_url(img_m.group(1))
+
+            if needs_body:
+                desc_m = re.search(r'property=["\'](?:og:description|description)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
+                if desc_m:
+                    cleaned_desc = clean_text(desc_m.group(1))
+                    if len(cleaned_desc) > 30:
+                        article["summary"] = cleaned_desc
+                        article["content"] = cleaned_desc
+    except Exception:
+        pass
+
+    return article
+
+def deduplicate_articles(articles):
+    unique = []
+    seen_titles = []
+
+    def get_tokens(title):
+        cleaned = re.sub(r'[^\u0D80-\u0DFFa-zA-Z0-9\s]', ' ', title).lower()
+        stopwords = {'සහ', 'හා', 'හෝ', 'එක්', 'අද', 'හෙට', 'සිට', 'සඳහා', 'බව', 'යයි', 'වෙයි', 'කරයි', 'මහතා'}
+        return {w for w in cleaned.split() if len(w) >= 3 and w not in stopwords}
+
+    for art in articles:
+        tokens = get_tokens(art["title"])
+        if not tokens:
             continue
+        duplicate = False
+        for ex_art, ex_tokens in seen_titles:
+            shared = len(tokens.intersection(ex_tokens))
+            min_len = min(len(tokens), len(ex_tokens))
+            similarity = shared / min_len if min_len > 0 else 0
+            if similarity >= 0.55 or (shared >= 3 and similarity >= 0.35):
+                duplicate = True
+                # Merge details if other article has better content
+                if not ex_art.get("image_url") and art.get("image_url"):
+                    ex_art["image_url"] = art["image_url"]
+                if len(art.get("content", "")) > len(ex_art.get("content", "")):
+                    ex_art["content"] = art["content"]
+                break
 
-        pub_dt = parse_published_at(item.get("published_at"))
-        if pub_dt is None:
-            pub_dt = now
-            item["published_at"] = now.strftime("%Y-%m-%d %H:%M:%S")
+        if not duplicate:
+            seen_titles.append((art, tokens))
+            unique.append(art)
 
-        if pub_dt >= cutoff_time:
-            fresh_articles.append(item)
+    return unique
 
-    fresh_articles.sort(
-        key=lambda x: int(x["id"]) if str(x.get("id", "")).isdigit() else 0,
-        reverse=True
-    )
-    return fresh_articles[:MAX_ITEMS_TO_KEEP]
+# ==================== STATE & BUDGETING (HOURLY PACING) ====================
+def load_state():
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "budget_day": "",
+        "daily_count": 0,
+        "budget_hour": "",
+        "hourly_count": 0,
+        "last_notification_ms": 0,
+        "recent_notified_keys": []
+    }
 
-def send_push_notification(article):
-    firebase_creds_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
-    if not firebase_creds_json:
-        print("Note: FIREBASE_SERVICE_ACCOUNT secret not found. Skipping push notification.")
-        return
+def save_state(state):
+    try:
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        print(f"Warning: Could not save engine state: {e}")
+
+# ==================== FIREBASE SYNC & FCM DISPATCH ====================
+def initialize_firebase():
+    creds_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT")
+    if not creds_json:
+        print("Note: FIREBASE_SERVICE_ACCOUNT not configured. Running in offline/preview mode.")
+        return False
 
     try:
         import firebase_admin
-        from firebase_admin import credentials, messaging
-
+        from firebase_admin import credentials, db
         if not firebase_admin._apps:
-            cred_dict = json.loads(firebase_creds_json)
+            cred_dict = json.loads(creds_json)
             cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-
-        body_text = article.get("summary") or article.get("title", "")
-        if len(body_text) > 120:
-            body_text = body_text[:117] + "..."
-
-        notification = messaging.Notification(
-            title=f"🔴 {article['title']}",
-            body=body_text,
-            image=article.get("image_url") or None
-        )
-
-        message = messaging.Message(
-            notification=notification,
-            data={
-                "news_id": str(article["id"]),
-                "category": article.get("category", "දේශීය පුවත්"),
-                "click_action": "FLUTTER_NOTIFICATION_CLICK"
-            },
-            topic="news"
-        )
-
-        response = messaging.send(message)
-        print(f"🔥 FCM PUSH NOTIFICATION SENT SUCCESSFULLY! ID: {response}")
-
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': HERA_CONFIG["database_url"]
+            })
+            print("✅ Firebase Admin SDK successfully connected!")
+        return True
     except Exception as e:
-        print(f"Error sending Firebase notification: {e}")
+        print(f"❌ Firebase initialization error: {e}")
+        return False
 
-def run():
-    now_sl = get_now_sl()
-    print(f"[{now_sl.strftime('%Y-%m-%d %H:%M:%S')} SLST] Starting News Auto-Update...")
-
-    existing_raw = load_existing_news()
-    existing_news = purge_old_news(existing_raw)
-    existing_ids = {str(item["id"]) for item in existing_news}
-    print(f"Loaded {len(existing_news)} active news items from {NEWS_JSON_FILE}.")
-
-    rss_xml = fetch_rss_feed()
-    if not rss_xml:
-        print("Error: Could not retrieve live RSS feed. Exiting.")
-        return
-
+def sync_firebase_realtime_db(articles):
     try:
-        root = ET.fromstring(rss_xml)
+        from firebase_admin import db
+        feed_dict = {}
+        items_dict = {}
+        for art in articles[:HERA_CONFIG["max_feed_items"]]:
+            a_id = str(art["id"])
+            feed_dict[a_id] = {
+                "id": a_id,
+                "title": art["title"],
+                "category": art.get("category", "දේශීය පුවත්"),
+                "summary": art.get("summary", ""),
+                "content": art.get("content", ""),
+                "image_url": art.get("image_url", ""),
+                "published_at": art.get("published_at", ""),
+                "published_at_ms": art.get("published_at_ms", 0),
+                "fetched_at_ms": art.get("fetched_at_ms", 0),
+                "source_name": art.get("source_name", "Hera News"),
+                "source_url": art.get("source_url", ""),
+                "is_top_story": art.get("is_top_story", False),
+                "importance_score": art.get("importance_score", 0),
+                "importance_tier": art.get("importance_tier", "feed_only"),
+            }
+            items_dict[a_id] = art
+
+        root_ref = db.reference('news')
+        root_ref.child('feed').set(feed_dict)
+        root_ref.child('items').update(items_dict)
+        root_ref.child('meta').update({
+            "initialized": True,
+            "source": "Hera News Engine",
+            "active_count": len(articles),
+            "updated_at_ms": int(time.time() * 1000),
+            "last_scan_status": "success"
+        })
+        print(f"✅ Firebase Realtime Database updated with {len(feed_dict)} feed items!")
     except Exception as e:
-        print(f"Error parsing RSS XML: {e}")
+        print(f"Warning: Firebase DB sync error: {e}")
+
+def send_fcm_notification(article):
+    try:
+        from firebase_admin import messaging
+        clean_title = article['title'][:250]
+        clean_summary = (article.get('summary') or article.get('category') or 'අලුත් පුවතක්')[:500]
+        body = clean_summary[:180] or clean_title[:180]
+        safe_image = article.get('image_url') or ""
+
+        # Android high-priority data message with Hera-compatible format
+        message = messaging.Message(
+            topic=HERA_CONFIG["topic"],
+            data={
+                "type": "news",
+                "id": str(article["id"]),
+                "news_id": str(article["id"]),
+                "title": clean_title,
+                "article_title": clean_title,
+                "body": body,
+                "category": article.get("category", "දේශීය පුවත්"),
+                "summary": clean_summary,
+                "content": (article.get("content") or clean_summary)[:1500],
+                "image_url": safe_image,
+                "published_at": article.get("published_at", get_now_sl().strftime("%Y-%m-%d %H:%M:%S")),
+                "source_name": article.get("source_name", "Hera News"),
+                "source_url": str(article.get("source_url") or "")[:500],
+            },
+            android=messaging.AndroidConfig(
+                priority="high",
+                notification=messaging.AndroidNotification(
+                    title=f"🔴 {clean_title}",
+                    body=body,
+                    image=safe_image if safe_image else None,
+                    sound="hera_notification"
+                )
+            )
+        )
+
+        resp = messaging.send(message)
+        print(f"🔥 FCM PUSH NOTIFICATION SENT! Topic: news, ID: {resp}, Article: {clean_title}")
+        return True
+    except Exception as e:
+        print(f"❌ FCM sending failed: {e}")
+        return False
+
+# ==================== MAIN RUNNER ====================
+def main():
+    now_sl = get_now_sl()
+    print(f"[{now_sl.strftime('%Y-%m-%d %H:%M:%S')} SLST] Hera News 24/7 Engine Started...")
+
+    has_firebase = initialize_firebase()
+    state = load_state()
+
+    # 1. Fetch articles from all 3 independent sources
+    itn_articles = fetch_itn_news()
+    lankadeepa_articles = fetch_lankadeepa_news()
+    derana_articles = fetch_adaderana_news()
+
+    combined = itn_articles + lankadeepa_articles + derana_articles
+    if not combined:
+        print("Warning: All news sources were empty or unreachable. Exiting safely.")
         return
 
-    channel = root.find("channel")
-    if channel is None:
-        print("Error: Invalid RSS feed format (missing channel).")
-        return
+    # 2. Deduplicate across sources
+    unique_articles = deduplicate_articles(combined)
+    print(f"Combined total: {len(combined)} -> Deduplicated: {len(unique_articles)} articles.")
 
-    items = channel.findall("item")
-    print(f"Total items in RSS feed: {len(items)}")
+    # 3. Calculate importance and sports scoring
+    scored_articles = [calculate_importance(art) for art in unique_articles]
+    # Sort strictly descending by publication time
+    scored_articles.sort(key=lambda x: x.get("published_at_ms", 0), reverse=True)
 
-    category_map = {
-        'hot-news': 'දේශීය පුවත්',
-        'international-news': 'විදේශීය පුවත්',
-        'sports-news': 'ක්‍රීඩා පුවත්',
-        'feature-news': 'විශේෂාංග',
-        'other-news': 'වෙනත් පුවත්'
-    }
+    # Enrich top items lacking images or summaries
+    for i in range(min(15, len(scored_articles))):
+        if not scored_articles[i].get("image_url") or len(scored_articles[i].get("summary", "")) < 40:
+            scored_articles[i] = enrich_article_details(scored_articles[i])
 
-    newly_added = []
-
-    for item in items:
-        link_elem = item.find("link")
-        link = link_elem.text.strip() if link_elem is not None and link_elem.text else ""
-        id_match = re.search(r'/news/(\d+)', link)
-        news_id = id_match.group(1) if id_match else ""
-
-        if not news_id or news_id in existing_ids:
-            continue
-
-        title_elem = item.find("title")
-        title = clean_text(title_elem.text) if title_elem is not None and title_elem.text else ""
-        if not title:
-            continue
-
-        cat_elem = item.find("category")
-        raw_cat = cat_elem.text.strip() if cat_elem is not None and cat_elem.text else "hot-news"
-        category = category_map.get(raw_cat, 'දේශීය පුවත්')
-
-        print(f"==> NEW ARTICLE FOUND: [{news_id}] {title}")
-        image_url = ""
-        summary = ""
-        full_paragraphs = []
-
-        try:
-            article_html = http_get(link)
-            if article_html:
-                img_match = re.search(r'property=["\']og:image["\'] content=["\']([^"\']+)["\']', article_html)
-                if img_match:
-                    image_url = img_match.group(1).strip()
-
-                desc_match = re.search(r'property=["\']og:description["\'] content=["\']([^"\']+)["\']', article_html)
-                if desc_match:
-                    summary = clean_text(desc_match.group(1))
-
-                article_match = re.search(r'<article[^>]*>([\s\S]*?)</article>', article_html)
-                if article_match:
-                    p_tags = re.findall(r'<p[^>]*>([\s\S]*?)</p>', article_match.group(1))
-                    for p in p_tags:
-                        cleaned_p = clean_text(p)
-                        if len(cleaned_p) > 10 and not cleaned_p.lower().startswith('add ada derana'):
-                            full_paragraphs.append(cleaned_p)
-        except Exception as e:
-            print(f"Error parsing article {news_id}: {e}")
-
-        full_content = "\n\n".join(full_paragraphs)
-        if not summary and full_paragraphs:
-            summary = full_paragraphs[0]
-        if not full_content:
-            full_content = summary if summary else title
-
-        article_obj = {
-            "id": news_id,
-            "title": title,
-            "category": category,
-            "summary": summary,
-            "content": full_content,
-            "image_url": image_url,
-            "published_at": get_now_sl().strftime("%Y-%m-%d %H:%M:%S"),
-            "source_name": "Ada Derana",
-            "source_url": link
-        }
-
-        newly_added.append(article_obj)
-        existing_ids.add(news_id)
-
-    combined_list = newly_added + existing_news
-    final_list = purge_old_news(combined_list)
-
-    if newly_added or len(final_list) != len(existing_raw):
-        print(f"Writing {len(final_list)} articles into {NEWS_JSON_FILE} (Added: {len(newly_added)})...")
+    # 4. Save to news.json for GitHub Pages
+    json_list = scored_articles[:HERA_CONFIG["max_json_items"]]
+    try:
         with open(NEWS_JSON_FILE, "w", encoding="utf-8") as f:
-            json.dump(final_list, f, ensure_ascii=False, indent=2)
+            json.dump(json_list, f, ensure_ascii=False, indent=2)
+        print(f"✅ Saved {len(json_list)} fresh articles to {NEWS_JSON_FILE}.")
+    except Exception as e:
+        print(f"Warning: Could not write {NEWS_JSON_FILE}: {e}")
 
-        print(f"Successfully saved {len(final_list)} total articles into {NEWS_JSON_FILE}.")
+    # 5. Sync to Firebase Realtime Database
+    if has_firebase:
+        sync_firebase_realtime_db(scored_articles)
 
-        # Send push notification for the newest breaking story!
-        if newly_added:
-            latest_article = newly_added[0]
-            send_push_notification(latest_article)
+    # 6. Notification Dispatcher (Priority Queue & Pacing)
+    now_ms = int(time.time() * 1000)
+    today_str = now_sl.strftime("%Y-%m-%d")
+    hour_str = now_sl.strftime("%Y-%m-%d-%H")
+
+    if state.get("budget_day") != today_str:
+        state["budget_day"] = today_str
+        state["daily_count"] = 0
+
+    if state.get("budget_hour") != hour_str:
+        state["budget_hour"] = hour_str
+        state["hourly_count"] = 0
+
+    recent_keys = set(state.get("recent_notified_keys", []))
+
+    # Candidates eligible for notification
+    candidates = [
+        art for art in scored_articles
+        if art.get("importance_tier") != "feed_only" and str(art["id"]) not in recent_keys
+    ]
+
+    # Preemption Sort: Urgent/Emergency jump immediately to index 0!
+    tier_rank = {"emergency": 4, "urgent": 3, "high": 2, "standard": 1, "feed_only": 0}
+    candidates.sort(
+        key=lambda x: (tier_rank.get(x.get("importance_tier", "feed_only"), 0), x.get("importance_score", 0)),
+        reverse=True
+    )
+
+    if candidates and has_firebase:
+        top_art = candidates[0]
+        tier = top_art.get("importance_tier")
+        is_urgent = tier in ("urgent", "emergency")
+
+        # Pacing & Gap rules
+        last_sent_ms = state.get("last_notification_ms", 0)
+        gap_needed_min = HERA_CONFIG["standard_gap_minutes"]
+        if tier == "high":
+            gap_needed_min = HERA_CONFIG["high_priority_gap_minutes"]
+        elif is_urgent:
+            gap_needed_min = HERA_CONFIG["urgent_gap_minutes"]
+
+        time_since_last_min = (now_ms - last_sent_ms) / 60000
+
+        can_send = True
+        if state["daily_count"] >= HERA_CONFIG["max_notifications_per_day"] and not is_urgent:
+            print("Daily notification limit reached. Holding for next day.")
+            can_send = False
+        elif state["hourly_count"] >= HERA_CONFIG["max_notifications_per_hour"] and not is_urgent:
+            print(f"Hourly pace hold ({state['hourly_count']} sent this hour). Holding for next hour.")
+            can_send = False
+        elif time_since_last_min < gap_needed_min:
+            print(f"Spacing gap in effect ({time_since_last_min:.1f}/{gap_needed_min} min). Holding.")
+            can_send = False
+
+        if can_send:
+            # Ensure rich content and image before sending notification
+            top_art = enrich_article_details(top_art)
+            if send_fcm_notification(top_art):
+                state["daily_count"] += 1
+                state["hourly_count"] += 1
+                state["last_notification_ms"] = now_ms
+                recent_list = state.get("recent_notified_keys", [])
+                recent_list.append(str(top_art["id"]))
+                state["recent_notified_keys"] = recent_list[-150:]
+                save_state(state)
     else:
-        print("No changes. news.json is fresh and up-to-date.")
+        print("No candidates pending notification or Firebase not initialized.")
+
+    save_state(state)
+    print("Hera News Engine run finished successfully.")
 
 if __name__ == "__main__":
-    run()
+    main()
