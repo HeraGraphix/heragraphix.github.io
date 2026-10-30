@@ -36,17 +36,16 @@ HERA_CONFIG = {
     "project_id": "hera-keyboard",
     "database_url": "https://hera-keyboard-default-rtdb.firebaseio.com",
     "topic": "news",
-    "retention_days": 3,
+    "retention_hours": 168,
     "max_feed_items": 100,
-    "max_json_items": 40,
-    "max_notifications_per_day": 36,
-    "max_notifications_per_hour": 2,
-    "standard_gap_minutes": 20,
-    "high_priority_gap_minutes": 8,
+    "max_json_items": 100,
+    "max_notifications_per_day": 12,
+    "max_notifications_per_hour": 1,
+    "minimum_scan_gap_minutes": 7,
+    "high_priority_gap_minutes": 30,
     "urgent_gap_minutes": 3,
-    "notification_threshold": 45,
-    "high_priority_threshold": 68,
-    "urgent_threshold": 82
+    "high_priority_threshold": 72,
+    "urgent_threshold": 88
 }
 
 HTTP_SESSION = requests.Session()
@@ -67,7 +66,7 @@ def http_get(url, timeout=20):
             url,
             impersonate='chrome124',
             timeout=timeout,
-            verify=False,
+            verify=True,
             headers={'Accept-Language': 'si,en-US;q=0.9,en;q=0.8'}
         )
         if resp.status_code == 200 and resp.text:
@@ -79,7 +78,7 @@ def http_get(url, timeout=20):
 
     # 2. Fallback: Standard requests Session
     try:
-        resp = HTTP_SESSION.get(url, timeout=timeout, verify=False)
+        resp = HTTP_SESSION.get(url, timeout=timeout)
         if resp.status_code == 200 and resp.text:
             return resp.text
     except Exception:
@@ -88,7 +87,7 @@ def http_get(url, timeout=20):
     # 3. Fallback: curl CLI
     try:
         import subprocess
-        cmd = ['curl', '-s', '-k', '-L', '--compressed', '--max-time', str(timeout), url]
+        cmd = ['curl', '-s', '-L', '--compressed', '--max-time', str(timeout), url]
         res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore')
         if res.returncode == 0 and res.stdout and len(res.stdout.strip()) > 20:
             return res.stdout
@@ -119,6 +118,67 @@ def normalize_image_url(url):
         return ""
     return clean.replace(' ', '%20')
 
+def title_tokens(title):
+    cleaned = re.sub(r'[^\u0D80-\u0DFFa-zA-Z0-9\s]', ' ', str(title or '')).lower()
+    stopwords = {
+        'සහ', 'හා', 'හෝ', 'එක්', 'අද', 'හෙට', 'සිට', 'සඳහා', 'බව', 'යයි',
+        'වෙයි', 'කරයි', 'මහතා', 'වෙත', 'ගැන', 'ලෙස', 'යන', 'මෙම'
+    }
+    return {word for word in cleaned.split() if len(word) >= 3 and word not in stopwords}
+
+def token_similarity(left, right):
+    if not left or not right:
+        return 0.0
+    shared = len(left.intersection(right))
+    return shared / min(len(left), len(right))
+
+def has_sri_lanka_context(text):
+    return bool(re.search(
+        r'(ශ්‍රී\s*ලංකා|ශ්‍රීලංකා|ලංකාව|මෙරට|දිවයින|කොළඹ|රුපියල්|ලංකා\s*කණ්ඩායම|අපේ\s*රට)',
+        str(text or ''),
+        re.I,
+    ))
+
+def is_foreign_only(text):
+    value = str(text or '')
+    foreign_marker = bool(re.search(
+        r'(විදෙස්\s*මාධ්‍ය|විදේශීය|ඉන්දියාව|ඉන්දියාවේ|පාකිස්තානය|පාකිස්තාන|'
+        r'ඇමරිකාව|ඇමරිකාවේ|රුසියාව|රුසියාවේ|යුක්රේන|ඊශ්‍රායල|ගාසා|චීනය|'
+        r'බ්‍රිතාන්‍ය|ප්‍රංශය|ජපානය|කොරියාව|ඔස්ට්‍රේලියාව|යුරෝපය|අප්‍රිකාව|'
+        r'ලොව|ලෝකයේ|ගෝලීය)',
+        value,
+        re.I,
+    ))
+    return foreign_marker and not has_sri_lanka_context(value)
+
+def is_relevant_foreign_news(text):
+    value = str(text or '')
+    return bool(re.search(
+        r'(ලොව\s*විශාලතම|ලෝකයේ\s*විශාලතම|ගෝලීය|ජාත්‍යන්තර\s*හදිසි|'
+        r'ලෝක\s*කුසලාන|ඔලිම්පික්|සුනාමි|භූමිකම්පා|වසංගත|තෙල්\s*මිල|'
+        r'ජාත්‍යන්තර\s*වෙළඳපොළ|දැවැන්ත\s*සයිබර්|හැක්\s*කිරීම)',
+        value,
+        re.I,
+    ))
+
+def is_blocked_fluff(text):
+    return bool(re.search(
+        r'(ලග්න\s*පලාපල|කේන්දර|ජ්‍යොතිෂ|රාහු\s*කාලය|ලොතරැයි|'
+        r'වෙළඳ\s*දැන්වීම|වට්ටම්\s*දීමනා|ඕපාදූප|ගොසිප්|gossip|'
+        r'නළු\s*නිළි|විවාහ\s*ගිවිස|දික්කසාද)',
+        str(text or ''),
+        re.I,
+    ))
+
+def should_keep_article(article):
+    text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
+    if is_blocked_fluff(text):
+        return False
+    if is_foreign_only(text):
+        article['category'] = 'විදේශීය පුවත්'
+        return is_relevant_foreign_news(text)
+    return True
+
 def is_sports_news(title, text):
     combined = f"{title} {text}".lower()
     return bool(re.search(
@@ -128,8 +188,7 @@ def is_sports_news(title, text):
 
 def is_emergency_news(text):
     low = text.lower()
-    foreign_only = bool(re.search(r'(ඉන්දියාවේ|පාකිස්තාන|ඇමරිකාවේ|රුසියාවේ|යුක්රේන|ඊශ්‍රායල|ගාසා)', low)) and not bool(re.search(r'(ශ්‍රී\s*ලංකාවට|දිවයිනට|මෙරට|අපේ\s*රටට)', low))
-    if foreign_only:
+    if is_foreign_only(low):
         return False
     return bool(re.search(r'(රතු\s*නිවේදන|සුනාමි|භූමිකම්පා|ගංවතුර\s*(අවදානම්|අනතුරු\s*ඇඟවීම)|නාය.{0,24}(අවදානම්|අනතුරු\s*ඇඟවීම)|සුළි\s*කුණාටු|තද\s*සුළං\s*අවදානම්|වාන්\s*දොරටු|ජලාශ.*වාන්|අධික\s*වැසි\s*අවදානම්|ඉවත්\s*වන්නැයි\s*දැනුම්|හදිසි\s*තත්ත්ව|ඇඳිරි\s*නීතිය)', low))
 
@@ -138,6 +197,13 @@ def calculate_importance(article):
     title = article.get('title', '')
     score = 25
     reasons = []
+
+    if is_foreign_only(text):
+        reasons.append("foreign_context")
+        score -= 35
+        if is_relevant_foreign_news(text):
+            score += 20
+            reasons.append("global_impact")
 
     if is_emergency_news(text):
         score += 70
@@ -148,22 +214,28 @@ def calculate_importance(article):
         reasons.append("breaking_news")
 
     if re.search(r'(විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*කප්පාදු|ඉන්ධන\s*මිල|ගෑස්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන))', text, re.I):
-        score += 32
+        score += 50
         reasons.append("public_service")
 
     if re.search(r'(අයවැය|imf|මහ\s*බැංකු|පොලී\s*අනුපාත|උද්ධමනය|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ|අධිකරණ\s*තීන්දුව)', text, re.I):
-        score += 34
+        score += 47
         reasons.append("national_impact")
 
-    major_sport = bool(re.search(r'(ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|තරගාවලිය\s*ජය|ජයග්‍රහණය\s*කරයි|විශිෂ්ට\s*ජයක්|ලකුණු\s*\d+\s*කින්\s*ජය|කඩුලු\s*\d+\s*කින්\s*ජය)', text, re.I))
+    major_sport = has_sri_lanka_context(text) and bool(re.search(
+        r'(ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|'
+        r'තරගාවලිය\s*ජය|ජයග්‍රහණය\s*කරයි|විශිෂ්ට\s*ජයක්|'
+        r'ලකුණු\s*\d+\s*කින්\s*ජය|කඩුලු\s*\d+\s*කින්\s*ජය)',
+        text,
+        re.I,
+    ))
     if major_sport:
-        score += 35
+        score += 50
         reasons.append("major_sport")
     elif is_sports_news(title, text):
         score += 24
         reasons.append("sports_news")
 
-    if re.search(r'(ලග්න\s*පලාපල|කේන්දර|ජ්‍යොතිෂ|ලොතරැයි|වෙළඳ\s*දැන්වීම|වට්ටම්\s*දීමනා)', text, re.I):
+    if is_blocked_fluff(text):
         score -= 60
         reasons.append("blocked_fluff")
 
@@ -175,8 +247,6 @@ def calculate_importance(article):
         tier = "urgent"
     elif score >= HERA_CONFIG["high_priority_threshold"]:
         tier = "high"
-    elif score >= HERA_CONFIG["notification_threshold"]:
-        tier = "standard"
 
     article["importance_score"] = score
     article["importance_tier"] = tier
@@ -500,20 +570,14 @@ def deduplicate_articles(articles):
     unique = []
     seen_titles = []
 
-    def get_tokens(title):
-        cleaned = re.sub(r'[^\u0D80-\u0DFFa-zA-Z0-9\s]', ' ', title).lower()
-        stopwords = {'සහ', 'හා', 'හෝ', 'එක්', 'අද', 'හෙට', 'සිට', 'සඳහා', 'බව', 'යයි', 'වෙයි', 'කරයි', 'මහතා'}
-        return {w for w in cleaned.split() if len(w) >= 3 and w not in stopwords}
-
     for art in articles:
-        tokens = get_tokens(art["title"])
+        tokens = title_tokens(art["title"])
         if not tokens:
             continue
         duplicate = False
         for ex_art, ex_tokens in seen_titles:
             shared = len(tokens.intersection(ex_tokens))
-            min_len = min(len(tokens), len(ex_tokens))
-            similarity = shared / min_len if min_len > 0 else 0
+            similarity = token_similarity(tokens, ex_tokens)
             if similarity >= 0.55 or (shared >= 3 and similarity >= 0.35):
                 duplicate = True
                 if not ex_art.get("image_url") and art.get("image_url"):
@@ -527,6 +591,67 @@ def deduplicate_articles(articles):
             unique.append(art)
 
     return unique
+
+def load_existing_articles():
+    if not os.path.exists(NEWS_JSON_FILE):
+        return []
+    try:
+        with open(NEWS_JSON_FILE, "r", encoding="utf-8") as handle:
+            value = json.load(handle)
+        if not isinstance(value, list):
+            return []
+        return [item for item in value if isinstance(item, dict)]
+    except Exception as error:
+        print(f"Warning: Could not load existing {NEWS_JSON_FILE}: {error}")
+        return []
+
+def merge_with_history(fresh_articles, existing_articles, now_ms):
+    by_id = {}
+    for article in existing_articles:
+        article_id = str(article.get("id") or "").strip()
+        if not article_id:
+            continue
+        saved = dict(article)
+        saved["first_seen_ms"] = int(
+            saved.get("first_seen_ms")
+            or saved.get("fetched_at_ms")
+            or saved.get("published_at_ms")
+            or now_ms
+        )
+        by_id[article_id] = saved
+
+    for article in fresh_articles:
+        article_id = str(article.get("id") or "").strip()
+        if not article_id:
+            continue
+        previous = by_id.get(article_id, {})
+        current = dict(article)
+        current["first_seen_ms"] = int(
+            previous.get("first_seen_ms")
+            or previous.get("fetched_at_ms")
+            or current.get("fetched_at_ms")
+            or now_ms
+        )
+        by_id[article_id] = current
+
+    cutoff_ms = now_ms - HERA_CONFIG["retention_hours"] * 60 * 60 * 1000
+    future_limit_ms = now_ms + 6 * 60 * 60 * 1000
+    recent = []
+    for article in by_id.values():
+        published_ms = int(article.get("published_at_ms") or 0)
+        effective_ms = published_ms or int(article.get("first_seen_ms") or 0)
+        if effective_ms < cutoff_ms or effective_ms > future_limit_ms:
+            continue
+        if not should_keep_article(article):
+            continue
+        recent.append(article)
+
+    recent.sort(key=lambda item: int(item.get("published_at_ms") or 0), reverse=True)
+    return deduplicate_articles(recent)[:HERA_CONFIG["max_feed_items"]]
+
+def was_story_notified(article, recent_titles):
+    tokens = title_tokens(article.get("title", ""))
+    return any(token_similarity(tokens, title_tokens(title)) >= 0.50 for title in recent_titles)
 
 # ==================== STATE & BUDGETING ====================
 def load_state():
@@ -574,7 +699,7 @@ def initialize_firebase():
         print(f"❌ Firebase initialization error: {e}")
         return False
 
-def sync_firebase_realtime_db(articles):
+def sync_firebase_realtime_db(articles, source_counts=None):
     try:
         from firebase_admin import db
         feed_dict = {}
@@ -594,6 +719,7 @@ def sync_firebase_realtime_db(articles):
                 "published_at": art.get("published_at", ""),
                 "published_at_ms": art.get("published_at_ms", 0),
                 "fetched_at_ms": art.get("fetched_at_ms", 0),
+                "first_seen_ms": art.get("first_seen_ms", 0),
                 "source_name": art.get("source_name", "Hera News"),
                 "source_url": art.get("source_url", ""),
                 "is_top_story": art.get("is_top_story", False),
@@ -605,13 +731,20 @@ def sync_firebase_realtime_db(articles):
         root_ref = db.reference('news')
         # Overwrite feed with cleanly sorted, fresh items
         root_ref.child('feed').set(feed_dict)
-        root_ref.child('items').update(items_dict)
+        # The curated feed is authoritative. Replace items too so stale
+        # Apps Script records cannot remain addressable indefinitely.
+        root_ref.child('items').set(items_dict)
         root_ref.child('meta').update({
             "initialized": True,
             "source": "Hera News Engine (GitHub 24/7)",
-            "active_count": len(sorted_articles),
+            "active_count": len(feed_dict),
+            "maximum_articles": HERA_CONFIG["max_feed_items"],
+            "retention_hours": HERA_CONFIG["retention_hours"],
+            "decision_engine_version": "hera-intelligence-v3",
+            "maximum_notifications_per_day": HERA_CONFIG["max_notifications_per_day"],
             "updated_at_ms": int(time.time() * 1000),
-            "last_scan_status": "success"
+            "last_scan_status": "success",
+            "source_counts": source_counts or {},
         })
         print(f"✅ Firebase Realtime Database updated with {len(feed_dict)} clean feed items (Newest to Oldest)!")
     except Exception as e:
@@ -640,17 +773,12 @@ def send_fcm_notification(article):
                 "content": (article.get("content") or clean_summary)[:400],
                 "image_url": safe_image,
                 "published_at": article.get("published_at", get_now_sl().strftime("%Y-%m-%d %H:%M:%S")),
+                "published_at_ms": str(article.get("published_at_ms") or ""),
                 "source_name": article.get("source_name", "Hera News")[:40],
                 "source_url": str(article.get("source_url") or "")[:200],
             },
             android=messaging.AndroidConfig(
                 priority="high",
-                notification=messaging.AndroidNotification(
-                    title=f"🔴 {clean_title}",
-                    body=body,
-                    image=safe_image if safe_image else None,
-                    sound="hera_notification"
-                )
             )
         )
 
@@ -664,24 +792,49 @@ def send_fcm_notification(article):
 # ==================== MAIN RUNNER ====================
 def main():
     now_sl = get_now_sl()
+    now_ms = int(time.time() * 1000)
     print(f"[{now_sl.strftime('%Y-%m-%d %H:%M:%S')} SLST] Hera News 24/7 Engine Running...")
 
-    has_firebase = initialize_firebase()
     state = load_state()
+    dry_run = os.environ.get("HERA_DRY_RUN", "").strip().lower() == "true"
+    force_run = os.environ.get("HERA_FORCE_RUN", "").strip().lower() == "true"
+    last_scan_ms = int(state.get("last_successful_scan_ms") or 0)
+    minutes_since_scan = (now_ms - last_scan_ms) / 60000 if last_scan_ms else None
+    if (
+        not force_run
+        and minutes_since_scan is not None
+        and minutes_since_scan < HERA_CONFIG["minimum_scan_gap_minutes"]
+    ):
+        print(
+            f"Duplicate trigger ignored: last successful scan was "
+            f"{minutes_since_scan:.1f} minutes ago."
+        )
+        return
+
+    has_firebase = False if dry_run else initialize_firebase()
+    existing_articles = load_existing_articles()
 
     # 1. Fetch articles from all 3 independent sources
     itn_articles = fetch_itn_news()
     lankadeepa_articles = fetch_lankadeepa_news()
     derana_articles = fetch_adaderana_news()
+    source_counts = {
+        "itn": len(itn_articles),
+        "lankadeepa": len(lankadeepa_articles),
+        "ada_derana": len(derana_articles),
+    }
 
     combined = itn_articles + lankadeepa_articles + derana_articles
     if not combined:
-        print("Warning: All news sources were empty or unreachable. Exiting safely.")
-        return
+        raise RuntimeError("All news sources were empty or unreachable.")
 
-    # 2. Deduplicate across sources
-    unique_articles = deduplicate_articles(combined)
-    print(f"Combined total: {len(combined)} -> Deduplicated: {len(unique_articles)} articles.")
+    # 2. Remove obvious junk/irrelevant foreign stories, then deduplicate.
+    eligible_articles = [article for article in combined if should_keep_article(article)]
+    unique_articles = deduplicate_articles(eligible_articles)
+    print(
+        f"Combined total: {len(combined)} -> eligible: {len(eligible_articles)} "
+        f"-> deduplicated: {len(unique_articles)} articles."
+    )
 
     # 3. Enrich articles needing images or body in parallel
     print("Enriching articles needing images or body in parallel...")
@@ -696,26 +849,39 @@ def main():
         for idx, enriched in zip(needs_enrichment_indices[:40], enriched_results):
             unique_articles[idx] = enriched
 
-    # 4. Calculate importance and sports scoring
-    scored_articles = [calculate_importance(art) for art in unique_articles]
-    # Sort strictly descending by true publication time (NEWEST AT THE TOP)
-    scored_articles.sort(key=lambda x: x.get("published_at_ms", 0), reverse=True)
+    # 4. Merge the current scan with up to 7 days of history so a short RSS
+    # response cannot shrink the app feed. Re-score after enrichment.
+    fresh_scored = [calculate_importance(art) for art in unique_articles]
+    scored_articles = merge_with_history(fresh_scored, existing_articles, now_ms)
+    scored_articles = [calculate_importance(art) for art in scored_articles]
+    scored_articles.sort(
+        key=lambda item: int(item.get("published_at_ms") or 0),
+        reverse=True,
+    )
+    image_count = sum(1 for item in scored_articles if item.get("image_url"))
+    content_count = sum(1 for item in scored_articles if item.get("content"))
+    print(
+        f"Curated feed quality: {len(scored_articles)} items, "
+        f"{image_count} images, {content_count} full-content entries."
+    )
 
     # 5. Save to news.json for GitHub Pages
     json_list = scored_articles[:HERA_CONFIG["max_json_items"]]
-    try:
-        with open(NEWS_JSON_FILE, "w", encoding="utf-8") as f:
-            json.dump(json_list, f, ensure_ascii=False, indent=2)
-        print(f"✅ Saved {len(json_list)} fresh articles to {NEWS_JSON_FILE} (Sorted Newest First).")
-    except Exception as e:
-        print(f"Warning: Could not write {NEWS_JSON_FILE}: {e}")
+    if dry_run:
+        print(f"DRY RUN: validated {len(json_list)} articles; no files or cloud data changed.")
+    else:
+        try:
+            with open(NEWS_JSON_FILE, "w", encoding="utf-8") as f:
+                json.dump(json_list, f, ensure_ascii=False, indent=2)
+            print(f"✅ Saved {len(json_list)} fresh articles to {NEWS_JSON_FILE} (Sorted Newest First).")
+        except Exception as e:
+            print(f"Warning: Could not write {NEWS_JSON_FILE}: {e}")
 
     # 6. Sync cleanly to Firebase Realtime Database
     if has_firebase:
-        sync_firebase_realtime_db(scored_articles)
+        sync_firebase_realtime_db(scored_articles, source_counts)
 
     # 7. Notification Dispatcher
-    now_ms = int(time.time() * 1000)
     today_str = now_sl.strftime("%Y-%m-%d")
     hour_str = now_sl.strftime("%Y-%m-%d-%H")
 
@@ -727,16 +893,42 @@ def main():
         state["budget_hour"] = hour_str
         state["hourly_count"] = 0
 
-    recent_keys = set(state.get("recent_notified_keys", []))
+    recent_keys = set(str(value) for value in state.get("recent_notified_keys", []))
+    recent_titles = [str(value) for value in state.get("recent_notified_titles", [])]
+    for article in scored_articles:
+        if str(article.get("id")) in recent_keys:
+            recent_titles.append(article.get("title", ""))
 
-    candidates = [
-        art for art in scored_articles
-        if art.get("importance_tier") != "feed_only" and str(art["id"]) not in recent_keys
-    ]
+    # First v3 run establishes a baseline and never floods users with the
+    # existing backlog. Subsequent runs keep retrying unsent important stories
+    # until pacing permits them or they age out.
+    initialized = bool(state.get("v3_initialized"))
+    freshness_cutoff_ms = now_ms - 6 * 60 * 60 * 1000
+    candidates = []
+    if initialized:
+        candidates = [
+            article for article in scored_articles
+            if article.get("importance_tier") in ("high", "urgent", "emergency")
+            and int(article.get("published_at_ms") or 0) >= freshness_cutoff_ms
+            and str(article.get("id")) not in recent_keys
+            and not was_story_notified(article, recent_titles)
+        ]
+    else:
+        baseline = [
+            article.get("title", "") for article in scored_articles
+            if article.get("importance_tier") in ("high", "urgent", "emergency")
+        ]
+        recent_titles.extend(baseline)
+        state["v3_initialized"] = True
+        print("Notification baseline initialized; existing backlog will not be sent.")
 
-    tier_rank = {"emergency": 4, "urgent": 3, "high": 2, "standard": 1, "feed_only": 0}
+    tier_rank = {"emergency": 4, "urgent": 3, "high": 2, "feed_only": 0}
     candidates.sort(
-        key=lambda x: (tier_rank.get(x.get("importance_tier", "feed_only"), 0), x.get("importance_score", 0)),
+        key=lambda item: (
+            tier_rank.get(item.get("importance_tier", "feed_only"), 0),
+            item.get("importance_score", 0),
+            item.get("published_at_ms", 0),
+        ),
         reverse=True
     )
 
@@ -746,10 +938,8 @@ def main():
         is_urgent = tier in ("urgent", "emergency")
 
         last_sent_ms = state.get("last_notification_ms", 0)
-        gap_needed_min = HERA_CONFIG["standard_gap_minutes"]
-        if tier == "high":
-            gap_needed_min = HERA_CONFIG["high_priority_gap_minutes"]
-        elif is_urgent:
+        gap_needed_min = HERA_CONFIG["high_priority_gap_minutes"]
+        if is_urgent:
             gap_needed_min = HERA_CONFIG["urgent_gap_minutes"]
 
         time_since_last_min = (now_ms - last_sent_ms) / 60000
@@ -774,11 +964,17 @@ def main():
                 recent_list = state.get("recent_notified_keys", [])
                 recent_list.append(str(top_art["id"]))
                 state["recent_notified_keys"] = recent_list[-150:]
+                recent_titles.append(top_art.get("title", ""))
                 save_state(state)
     else:
         print("No candidates pending notification or Firebase not initialized.")
 
-    save_state(state)
+    if not dry_run:
+        state["recent_notified_titles"] = [title for title in recent_titles if title][-150:]
+        state["last_successful_scan_ms"] = now_ms
+        state["last_source_counts"] = source_counts
+        state["last_feed_count"] = len(scored_articles)
+        save_state(state)
     print("Hera News Engine run finished successfully.")
 
 if __name__ == "__main__":

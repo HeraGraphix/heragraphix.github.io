@@ -2,23 +2,36 @@ name: Auto Update News & Push Alerts
 
 on:
   schedule:
-    # Runs automatically every 10 minutes (offset by 3 minutes to avoid top-of-hour GitHub queue delays)
+    # GitHub schedules are best-effort. The engine catches up from source
+    # publication time and preserves up to 7 days of history after any delay.
     - cron: '3,13,23,33,43,53 * * * *'
   workflow_dispatch:
-    # Allows you to manually trigger anytime via the GitHub Actions button
+    inputs:
+      force:
+        description: 'Bypass the duplicate-trigger guard'
+        required: false
+        default: false
+        type: boolean
+  repository_dispatch:
+    types: [hera-news-scan]
+
+concurrency:
+  group: hera-news-engine
+  cancel-in-progress: false
 
 jobs:
   update-news:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     permissions:
       contents: write
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -31,12 +44,18 @@ jobs:
       - name: Run Hera News Engine & Push Notifications
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          HERA_FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.force || github.event_name == 'repository_dispatch' && github.event.client_payload.force || 'false' }}
         run: |
+          python -m unittest discover -s tests -p "test_*.py"
           python update_news.py
 
       - name: Commit and Push Updated news.json and State
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add news.json .news_engine_state.json || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update Hera breaking news & feed [skip ci]" && git push)
+          git add -- news.json .news_engine_state.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Auto-update Hera breaking news & feed [skip ci]"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
