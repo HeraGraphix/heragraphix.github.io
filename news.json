@@ -8,13 +8,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/casa.jpg",
     "published_at": "2026-10-30 15:58:33",
     "published_at_ms": 1793356113000,
-    "fetched_at_ms": 1793356238335,
+    "fetched_at_ms": 1793356892709,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843614/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238335
   },
   {
     "id": "itn_843623",
@@ -25,13 +26,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sdfsfdsfd.jpg",
     "published_at": "2026-10-30 15:53:27",
     "published_at_ms": 1793355807000,
-    "fetched_at_ms": 1793356238335,
+    "fetched_at_ms": 1793356892709,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843623/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238335
   },
   {
     "id": "itn_843620",
@@ -42,32 +44,37 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sdfsfdfdg.jpg",
     "published_at": "2026-10-30 15:51:47",
     "published_at_ms": 1793355707000,
-    "fetched_at_ms": 1793356238336,
+    "fetched_at_ms": 1793356892710,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843620/",
     "is_top_story": false,
-    "importance_score": 59,
-    "importance_tier": "standard",
+    "importance_score": 72,
+    "importance_tier": "high",
     "importance_reasons": [
       "national_impact"
-    ]
+    ],
+    "first_seen_ms": 1793356238336
   },
   {
     "id": "itn_843578",
     "title": "ලොව විශාලතම ක්‍රිප්ටො හුවමාරුව වන බයිනෑන්ස් සමාගම හැක් කිරීමකට ලක්වෙයි",
-    "category": "දේශීය පුවත්",
+    "category": "විදේශීය පුවත්",
     "summary": "ලොව විශාලතම ක්‍රිප්ටො හුවමාරුව වන බයිනෑන්ස් සමාගම ඩොලර් බිලියන 6.3ක හැක් කිරීමකට ලක් කර ඇති බව විදෙස් මාධ්‍ය වාර්තා කරනවා. මෙය මෙතෙක් ඉතිහාසයේ විශාලතම මූල්‍ය හැක් කිරීම බවටයි වාර්තා වන්නේ. බයිනෑන්ස් සමාගම පවසා ඇත්තේ සිය වත්කම්වලින් අඩක් අත්හිටුවා ඇති නමුත් බොහෝ වත්කම් මේවන විට හැකර්වරුන් අතේ පවතින බවයි. මෙම සිද්ධියට උතුරු කොරියාව සම්බන්ධ බවට විශ්වාස කෙරෙන […]",
     "content": "ලොව විශාලතම ක්‍රිප්ටො හුවමාරුව වන බයිනෑන්ස් සමාගම ඩොලර් බිලියන 6.3ක හැක් කිරීමකට ලක් කර ඇති බව විදෙස් මාධ්‍ය වාර්තා කරනවා. මෙය මෙතෙක් ඉතිහාසයේ විශාලතම මූල්‍ය හැක් කිරීම බවටයි වාර්තා වන්නේ. බයිනෑන්ස් සමාගම පවසා ඇත්තේ සිය වත්කම්වලින් අඩක් අත්හිටුවා ඇති නමුත් බොහෝ වත්කම් මේවන විට හැකර්වරුන් අතේ පවතින බවයි. මෙම සිද්ධියට උතුරු කොරියාව සම්බන්ධ බවට විශ්වාස කෙරෙන නමුත් ඒ බව මෙතෙක් තහවුරු කර ගෙන නැහැ. හැකර්වරුන් හදුනාගෙන ඔවුන් නීතිය හමුවට පැමිණවීම සදහා නීති ආයතන සමග සමීපව කටයුතු කරන බව බයිනෑන්ස් සමාගම පවසා තිබෙනවා",
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sdsdsdsds.jpg",
     "published_at": "2026-10-30 15:39:32",
     "published_at_ms": 1793354972000,
-    "fetched_at_ms": 1793356238336,
+    "fetched_at_ms": 1793356892710,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843578/",
     "is_top_story": false,
-    "importance_score": 25,
+    "importance_score": 10,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [
+      "foreign_context",
+      "global_impact"
+    ],
+    "first_seen_ms": 1793356238336
   },
   {
     "id": "itn_843604",
@@ -78,13 +85,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/mipe.jpg",
     "published_at": "2026-10-30 15:19:33",
     "published_at_ms": 1793353773000,
-    "fetched_at_ms": 1793356238336,
+    "fetched_at_ms": 1793356892710,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843604/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238336
   },
   {
     "id": "itn_843600",
@@ -95,13 +103,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/swrdesrer-1.jpg",
     "published_at": "2026-10-30 15:18:45",
     "published_at_ms": 1793353725000,
-    "fetched_at_ms": 1793356238337,
+    "fetched_at_ms": 1793356892710,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843600/",
     "is_top_story": true,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238337
   },
   {
     "id": "itn_843591",
@@ -112,13 +121,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sdfdfgdgdg.jpg",
     "published_at": "2026-10-30 15:12:09",
     "published_at_ms": 1793353329000,
-    "fetched_at_ms": 1793356238337,
+    "fetched_at_ms": 1793356892711,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843591/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238337
   },
   {
     "id": "itn_843584",
@@ -129,13 +139,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/ayurweda.jpg",
     "published_at": "2026-10-30 14:56:12",
     "published_at_ms": 1793352372000,
-    "fetched_at_ms": 1793356238338,
+    "fetched_at_ms": 1793356892711,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843584/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238338
   },
   {
     "id": "itn_843580",
@@ -146,32 +157,31 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/china-1.jpg",
     "published_at": "2026-10-30 14:47:10",
     "published_at_ms": 1793351830000,
-    "fetched_at_ms": 1793356238338,
+    "fetched_at_ms": 1793356892711,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843580/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238338
   },
   {
-    "id": "itn_843575",
-    "title": "භූතානයේ ග්ලැසියර විලක් පිපිරීමෙන් හදිසි ගංවතුර තත්ත්වයක්",
+    "id": "lk_1_700045",
+    "title": "මීපේ කර්මාන්ත ශාලාවක පිපිරීමක්: තුනක් රෝහලට",
     "category": "දේශීය පුවත්",
-    "summary": "භූතානයේ ගාසා (Gasa) දිස්ත්‍රික්කයේ පිහිටි ෂින්ටාපු (Shintaphu / Lemthang) ග්ලැසියර විල හදිසියේ පිපිරීමෙන් හටගත් දැඩි ගංවතුර තත්ත්වය හේතුවෙන් ඉන්දියාවේ බටහිර බෙංගාලය සහ අසම් ප්‍රාන්තවල ප්‍රදේශ කිහිපයකට රතු නිවේදන (High Alert) නිකුත් කර ඇති බව විදෙස් මාධ්‍ය වාර්තා කර තිබෙනවා. මෙම සිදුවීමත් සමග සංකොෂ් (Sankosh) ගංගා පද්ධතියේ ජල මට්ටම හදිසියේ ඉහළ යාමේ දැඩි අවදානමක් මතුව ඇති […]",
-    "content": "භූතානයේ ගාසා (Gasa) දිස්ත්‍රික්කයේ පිහිටි ෂින්ටාපු (Shintaphu / Lemthang) ග්ලැසියර විල හදිසියේ පිපිරීමෙන් හටගත් දැඩි ගංවතුර තත්ත්වය හේතුවෙන් ඉන්දියාවේ බටහිර බෙංගාලය සහ අසම් ප්‍රාන්තවල ප්‍රදේශ කිහිපයකට රතු නිවේදන (High Alert) නිකුත් කර ඇති බව විදෙස් මාධ්‍ය වාර්තා කර තිබෙනවා. මෙම සිදුවීමත් සමග සංකොෂ් (Sankosh) ගංගා පද්ධතියේ ජල මට්ටම හදිසියේ ඉහළ යාමේ දැඩි අවදානමක් මතුව ඇති අතර, බටහිර බෙංගාලයේ පීඩාවට පත් ප්‍රදේශවලින් 10,000කට අධික පිරිසක් මේ වන විටත් සුරක්ෂිත මධ්‍යස්ථාන වෙතයි යොමු කර ඇත්තේ. මීට අමතරව අසම්හි ධුබ්‍රි (Dhubri) දිස්ත්‍රික් බලධාරීන් ද පහත් බිම් වෙත ජලය ගැලීමේ අවදානම පාලනය කිරීමට අවශ්‍ය පූර්ව සූදානම් කටයුතු වේගවත් කර තිබෙනවා. මෙම ග්ලැසියර විල පිපිරීමේ ගංවතුර තත්ත්වය (GLOF) හේතුවෙන් විශාල ජල කඳක් මො චු (Mo Chhu) ගඟ ඔස්සේ සංකොෂ් ගඟ දෙසට ගලා එමින් පවතින අතර, අනතුරට ලක්විය හැකි ප්‍රදේශවල ආපදා කළමනාකරණ යාන්ත්‍රණයන් වහාම ක්‍රියාත්මක කිරීමටයි බලධාරීන් පියවර ගෙන ඇත්තේ. මෙම ගංවතුරට හසුව භූතානයේ ප්‍රකට ගාසා ට්ෂාචු (Gasa Tshachu) ස්වාභාවික උණු දිය උල්පත් ආශ්‍රිත යටිතල පහසුකම්, මාර්ග කොටස් සහ බේලි (Bailey) පාලම් දෙකක් ගසාගෙන ගොස් ඇති අතර, රාත්‍රී කාලයේ පැවැති අඳුර සහ ජල ප්‍රවාහයේ සැර බව නිසා හානියේ සම්පූර්ණ ප්‍රමාණය තක්සේරු කිරීම තවමත් බාධා වී තිබෙනවා",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sdfdsfdfdefedrf.jpg",
-    "published_at": "2026-10-30 14:32:36",
-    "published_at_ms": 1793350956000,
-    "fetched_at_ms": 1793356238339,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/30/843575/",
-    "is_top_story": false,
-    "importance_score": 75,
-    "importance_tier": "urgent",
-    "importance_reasons": [
-      "breaking_news"
-    ]
+    "summary": "පාදුක්ක මීපේ ප්‍රදේශයේ කර්මාන්ත ශාලාවක අද (30) දින සිදු වූ පිපිරීමකින් තුවාල ලැබූ සේවකයින් තිදෙනෙකු හෝමගම මූලික රෝහලට ඇතුලත් කල බව පාදුක්ක පොලිසිය පවසයි",
+    "content": "පාදුක්ක මීපේ ප්‍රදේශයේ කර්මාන්ත ශාලාවක අද (30) දින සිදු වූ පිපිරීමකින් තුවාල ලැබූ සේවකයින් තිදෙනෙකු හෝමගම මූලික රෝහලට ඇතුලත් කල බව පාදුක්ක පොලිසිය පවසයි",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_99040b37d8.jpg",
+    "published_at": "2026-10-30 14:45:00",
+    "published_at_ms": 1793351700000,
+    "fetched_at_ms": 1793356894951,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/මීපේ-කර්මාන්ත-ශාලාවක-පිපිරීමක්:-තුනක්-රෝහලට/1-700045",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894951
   },
   {
     "id": "itn_843571",
@@ -182,13 +192,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/police.jpg",
     "published_at": "2026-10-30 14:27:00",
     "published_at_ms": 1793350620000,
-    "fetched_at_ms": 1793356238339,
+    "fetched_at_ms": 1793356892711,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843571/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238339
   },
   {
     "id": "itn_843567",
@@ -199,15 +210,33 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/youth.jpg",
     "published_at": "2026-10-30 14:09:37",
     "published_at_ms": 1793349577000,
-    "fetched_at_ms": 1793356238339,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843567/",
     "is_top_story": false,
     "importance_score": 49,
-    "importance_tier": "standard",
+    "importance_tier": "feed_only",
     "importance_reasons": [
       "sports_news"
-    ]
+    ],
+    "first_seen_ms": 1793356238339
+  },
+  {
+    "id": "lk_1_700044",
+    "title": "පොලිසියේදී මියගිය තරුණයාගේ සිද්ධිය: පොලිසියේ 17කගෙන් ප්‍රකාශ ගනියි",
+    "category": "දේශීය පුවත්",
+    "summary": "හෝමාගම පොලිසිය මගින් අත්අඩංගුවට ගැනීමෙන් අනතුරුව මියගිය ඉෂාර හර්ෂ කුමාර නැමැත්තාගේ මරණය සම්බන්ධයෙන් මේවනවිට 17 දෙනකුගෙන් ප්‍රකාශ සටහන් කරගෙන ඇති බව පොලිස් මාධ්‍ය කොට්ඨාසය පවසයි",
+    "content": "හෝමාගම පොලිසිය මගින් අත්අඩංගුවට ගැනීමෙන් අනතුරුව මියගිය ඉෂාර හර්ෂ කුමාර නැමැත්තාගේ මරණය සම්බන්ධයෙන් මේවනවිට 17 දෙනකුගෙන් ප්‍රකාශ සටහන් කරගෙන ඇති බව පොලිස් මාධ්‍ය කොට්ඨාසය පවසයි",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_98f2eda55b.jpg",
+    "published_at": "2026-10-30 13:42:00",
+    "published_at_ms": 1793347920000,
+    "fetched_at_ms": 1793356894951,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/පොලිසියේදී-මියගිය-තරුණයාගේ-සිද්ධිය:-පොලිසියේ-17කගෙන්-ප්‍රකාශ-ගනියි/1-700044",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894951
   },
   {
     "id": "itn_843560",
@@ -218,29 +247,48 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/07/rakitha-1.jpg",
     "published_at": "2026-10-30 13:40:48",
     "published_at_ms": 1793347848000,
-    "fetched_at_ms": 1793356238340,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843560/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238340
+  },
+  {
+    "id": "lk_1_700043",
+    "title": "ව්‍යාජ, නිල් කැට සහ දම් කැට පොහොර ටොන් 10 ක් අල්ලයි",
+    "category": "දේශීය පුවත්",
+    "summary": "අනුරාධපුර දිස්ත්‍රික්කයේ ප්‍රදේශ කිහිපයක සිදුකළ වැටලීම්වලදී ප්‍රමිතියෙන් තොරව ව්‍යාජ ලෙස නිෂ්පාදනය කරන ලද නිල් කැට පොහොර සහ දම් කැට පොහොර ටොන් දහයකට වැඩි ප්‍රමාණයක් පසුගිය දින කීපයේදී අත්අඩංගුවට ගත් බව අනුරාධපුර ජාතික පොහොර ලේකම් කාර්යාලය පවසයි",
+    "content": "අනුරාධපුර දිස්ත්‍රික්කයේ ප්‍රදේශ කිහිපයක සිදුකළ වැටලීම්වලදී ප්‍රමිතියෙන් තොරව ව්‍යාජ ලෙස නිෂ්පාදනය කරන ලද නිල් කැට පොහොර සහ දම් කැට පොහොර ටොන් දහයකට වැඩි ප්‍රමාණයක් පසුගිය දින කීපයේදී අත්අඩංගුවට ගත් බව අනුරාධපුර ජාතික පොහොර ලේකම් කාර්යාලය පවසයි",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_f7a39d741c.jpg",
+    "published_at": "2026-10-30 13:29:00",
+    "published_at_ms": 1793347140000,
+    "fetched_at_ms": 1793356894951,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/ව්‍යාජ--නිල්-කැට-සහ-දම්-කැට-පොහොර-ටොන්-10-ක්-අල්ලයි/1-700043",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894951
   },
   {
     "id": "lk_1_700042",
-    "title": "ââà¶à¶à·à¶­à¶ºà·à¶±à· à·à·à¶»à¶à¶§ 4,000à¶à· à¶¸à·à¶º à¶ºà¶ºà·ââ",
+    "title": "’’ආඝාතයෙන් වසරකට 4,000ක් මිය යයි’’",
     "category": "දේශීය පුවත්",
-    "summary": "à¶à¶à·à¶­à¶º à¶»à·à¶à· à¶­à¶­à·à·à¶º à·à·à¶­à·à·à·à¶±à· à·à·à¶»à·à·à·à¶à· à¶»à·à¶à·à¶±à· à·à·à¶§ à¶¯à·à·à¶à· à¶´à¶¸à¶« à¶»à¶¢à¶ºà· à¶»à·à·à¶½à·à·à¶½à¶§ à¶à¶­à·à¶½à¶­à·à·à¶± à¶¶à·à¶­à· à¶à¶±à· à¶»à·à¶à·à¶±à· à·à·à¶»à¶¯à·à·à¶à· à¶´à¶¸à¶« à¶¸à·à¶º à¶ºà¶± à¶¶à· à·à·âà¶»à· à¶½à¶à¶à· à¶à¶à·à¶­ à·à¶à¶à¶¸à¶ºà· à·à¶·à·à¶´à¶­à· à·à·à¶±à·à¶ºà· à¶»à·à¶ à·à·à·à·à·à¶¥ à·à·à¶¯à·âà¶º à¶à·à¶¸à·à¶«à· à¶´à¶­à·à¶»à¶« à¶¸à·à¶­à· à¶´à·à·à¶ºà·",
-    "content": "à¶à¶à·à¶­à¶º à¶»à·à¶à· à¶­à¶­à·à·à¶º à·à·à¶­à·à·à·à¶±à· à·à·à¶»à·à·à·à¶à· à¶»à·à¶à·à¶±à· à·à·à¶§ à¶¯à·à·à¶à· à¶´à¶¸à¶« à¶»à¶¢à¶ºà· à¶»à·à·à¶½à·à·à¶½à¶§ à¶à¶­à·à¶½à¶­à·à·à¶± à¶¶à·à¶­à· à¶à¶±à· à¶»à·à¶à·à¶±à· à·à·à¶»à¶¯à·à·à¶à· à¶´à¶¸à¶« à¶¸à·à¶º à¶ºà¶± à¶¶à· à·à·âà¶»à· à¶½à¶à¶à· à¶à¶à·à¶­ à·à¶à¶à¶¸à¶ºà· à·à¶·à·à¶´à¶­à· à·à·à¶±à·à¶ºà· à¶»à·à¶ à·à·à·à·à·à¶¥ à·à·à¶¯à·âà¶º à¶à·à¶¸à·à¶«à· à¶´à¶­à·à¶»à¶« à¶¸à·à¶­à· à¶´à·à·à¶ºà·",
+    "summary": "ආඝාතය රෝගී තත්වය හේතුවෙන් වාර්ෂිකව රෝගීන් හැට දහසක් පමණ රජයේ රෝහල්වලට ඇතුලත්වන බවත් ඉන් රෝගීන් හාරදහසක් පමණ මිය යන බව ශ්‍රි ලංකා ආඝාත සංගමයේ සභාපති ස්නායු රෝග විශේෂඥ වෛද්‍ය ගාමිණී පතිරණ මහතා පවසයි",
+    "content": "ආඝාතය රෝගී තත්වය හේතුවෙන් වාර්ෂිකව රෝගීන් හැට දහසක් පමණ රජයේ රෝහල්වලට ඇතුලත්වන බවත් ඉන් රෝගීන් හාරදහසක් පමණ මිය යන බව ශ්‍රි ලංකා ආඝාත සංගමයේ සභාපති ස්නායු රෝග විශේෂඥ වෛද්‍ය ගාමිණී පතිරණ මහතා පවසයි",
     "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_7892ab9138.jpg",
     "published_at": "2026-10-30 13:27:00",
     "published_at_ms": 1793347020000,
-    "fetched_at_ms": 1793356240144,
+    "fetched_at_ms": 1793356894951,
     "source_name": "ලංකාදීප",
-    "source_url": "https://www.lankadeepa.lk/latest_news/ââà¶à¶à·à¶­à¶ºà·à¶±à·-à·à·à¶»à¶à¶§-4-000à¶à·-à¶¸à·à¶º-à¶ºà¶ºà·ââ/1-700042",
+    "source_url": "https://www.lankadeepa.lk/latest_news/’’ආඝාතයෙන්-වසරකට-4-000ක්-මිය-යයි’’/1-700042",
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356240144
   },
   {
     "id": "itn_843557",
@@ -251,13 +299,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/s3.jpg",
     "published_at": "2026-10-30 13:21:12",
     "published_at_ms": 1793346672000,
-    "fetched_at_ms": 1793356238340,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843557/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238340
   },
   {
     "id": "itn_843554",
@@ -268,13 +317,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/dxgfdg.jpg",
     "published_at": "2026-10-30 13:15:06",
     "published_at_ms": 1793346306000,
-    "fetched_at_ms": 1793356238340,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843554/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238340
   },
   {
     "id": "itn_843549",
@@ -285,7 +335,7 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/r-2.jpg",
     "published_at": "2026-10-30 12:59:52",
     "published_at_ms": 1793345392000,
-    "fetched_at_ms": 1793356238340,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843549/",
     "is_top_story": true,
@@ -294,7 +344,8 @@
     "importance_reasons": [
       "life_safety",
       "sports_news"
-    ]
+    ],
+    "first_seen_ms": 1793356238340
   },
   {
     "id": "itn_843548",
@@ -305,13 +356,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/xgfhgf.jpg",
     "published_at": "2026-10-30 12:59:39",
     "published_at_ms": 1793345379000,
-    "fetched_at_ms": 1793356238340,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843548/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238340
   },
   {
     "id": "itn_843544",
@@ -322,13 +374,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/ggggggggggg.jpg",
     "published_at": "2026-10-30 12:51:17",
     "published_at_ms": 1793344877000,
-    "fetched_at_ms": 1793356238341,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843544/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238341
   },
   {
     "id": "itn_843531",
@@ -339,13 +392,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/ff-1.jpg",
     "published_at": "2026-10-30 12:21:56",
     "published_at_ms": 1793343116000,
-    "fetched_at_ms": 1793356238341,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843531/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238341
   },
   {
     "id": "itn_843538",
@@ -356,13 +410,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/TH-1.jpg",
     "published_at": "2026-10-30 12:13:54",
     "published_at_ms": 1793342634000,
-    "fetched_at_ms": 1793356238341,
+    "fetched_at_ms": 1793356892712,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843538/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238341
   },
   {
     "id": "itn_843533",
@@ -373,13 +428,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/gfjnhhgj.jpg",
     "published_at": "2026-10-30 12:05:02",
     "published_at_ms": 1793342102000,
-    "fetched_at_ms": 1793356238341,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843533/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238341
   },
   {
     "id": "itn_843530",
@@ -390,13 +446,84 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/akuu.jpg",
     "published_at": "2026-10-30 11:57:03",
     "published_at_ms": 1793341623000,
-    "fetched_at_ms": 1793356238342,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843530/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238342
+  },
+  {
+    "id": "lk_1_700039",
+    "title": "කොස්තාපල් ළඟින් අයිස්- කුෂ් හමුවෙයි",
+    "category": "දේශීය පුවත්",
+    "summary": "අත්තිඩිය සේවස්ථ පුහුණු ඒකකයෙන් ජේ බි එල් සවුන්ඩ් උපකරණයක් සොරා ගත් පොලිස් කොස්තාපල්වරයා සන්තකයේ තිබී අයිස්, කුෂ්, ගංජා හා මත්කරල් ද හමු වු බව දෙහිවල පොලිසිය සඳහන් කරයි",
+    "content": "අත්තිඩිය සේවස්ථ පුහුණු ඒකකයෙන් ජේ බි එල් සවුන්ඩ් උපකරණයක් සොරා ගත් පොලිස් කොස්තාපල්වරයා සන්තකයේ තිබී අයිස්, කුෂ්, ගංජා හා මත්කරල් ද හමු වු බව දෙහිවල පොලිසිය සඳහන් කරයි",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_43bb886d0c.jpg",
+    "published_at": "2026-10-30 11:34:00",
+    "published_at_ms": 1793340240000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/කොස්තාපල්-ළඟින්-අයිස්--කුෂ්--හමුවෙයි/1-700039",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894952
+  },
+  {
+    "id": "lk_1_700037",
+    "title": "නඩු වාර්තා සොරා ගත්තැයි සැරයන්වරයකු අත්අඩංගුවට",
+    "category": "දේශීය පුවත්",
+    "summary": "පොළොන්නරුව අධිකරණ අංක දෙකෙහි නඩු වාර්තා 12 ක් හා රියදුරු බලපත්‍ර 13 සහිත ගොනුවක් සොරකම් කිරීමට සැකපිට අම්පාර කොට්ඨාසයේ මහඔය පොලිස් ස්ථානයට අනුයුක්තව රාජකාරි කරන පොලිස් සැරයන්වරයකු පොළොන්නරුව කොට්ඨාස අපරාධ විමර්ශන අංශය මගින් අත්අඩංගුවට ගෙන ඇත",
+    "content": "පොළොන්නරුව අධිකරණ අංක දෙකෙහි නඩු වාර්තා 12 ක් හා රියදුරු බලපත්‍ර 13 සහිත ගොනුවක් සොරකම් කිරීමට සැකපිට අම්පාර කොට්ඨාසයේ මහඔය පොලිස් ස්ථානයට අනුයුක්තව රාජකාරි කරන පොලිස් සැරයන්වරයකු පොළොන්නරුව කොට්ඨාස අපරාධ විමර්ශන අංශය මගින් අත්අඩංගුවට ගෙන ඇත",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_700c84e01b.jpg",
+    "published_at": "2026-10-30 11:30:00",
+    "published_at_ms": 1793340000000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/නඩු-වාර්තා-සොරා-ගත්තැයි-සැරයන්වරයකු-අත්අඩංගුවට/1-700037",
+    "importance_score": 75,
+    "importance_tier": "high",
+    "importance_reasons": [
+      "public_service"
+    ],
+    "first_seen_ms": 1793356894952
+  },
+  {
+    "id": "lk_1_700034",
+    "title": "දින 12 ක් මඩ වගුරේ සිටි අලියා ප්‍රතිකාර සඳහා උඩවලවට",
+    "category": "දේශීය පුවත්",
+    "summary": "දින දොළහක් පුරා ආහාර නොමැතිව ගල්ලෑල්ල කුසුම්ගම ප්‍රදේශයේ වෙල්යායක මඩවගුරක වැටී සිටි අවුරුදු දහයක් පමණ වයසති අලි පැටියා වැඩිදුර ප්‍රතිකාර සඳහා උඩවලව ඇත්අතුරු සෙවණට රැගෙන යාමට වනජීවී දෙපාර්තමේන්තුවේ පශු වෛද්‍ය ඒකකය පියවර ගත්හ",
+    "content": "දින දොළහක් පුරා ආහාර නොමැතිව ගල්ලෑල්ල කුසුම්ගම ප්‍රදේශයේ වෙල්යායක මඩවගුරක වැටී සිටි අවුරුදු දහයක් පමණ වයසති අලි පැටියා වැඩිදුර ප්‍රතිකාර සඳහා උඩවලව ඇත්අතුරු සෙවණට රැගෙන යාමට වනජීවී දෙපාර්තමේන්තුවේ පශු වෛද්‍ය ඒකකය පියවර ගත්හ",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_767f9fe371.jpg",
+    "published_at": "2026-10-30 11:25:00",
+    "published_at_ms": 1793339700000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/දින-12-ක්-මඩ-වගුරේ-සිටි-අලියා-ප්‍රතිකාර-සඳහා-උඩවලවට/1-700034",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894952
+  },
+  {
+    "id": "lk_1_700029",
+    "title": "පාන් මිල ඉහළට",
+    "category": "දේශීය පුවත්",
+    "summary": "පාන් ගෙඩියක මිළ සහ අනෙකුත් සියලුම කෙටි කෑම වල මිළ රුපියල් 5.00 ක් අද (30) මධ්‍යම රාත්‍රී සිට ඉහළ නැංවීමට තම විධායක සභාවේ තීරණය මත සමස්ථ ලංකා බේකරි හිමියන්ගේ සංගමයේ සභාපති එන්.කේ.ජයවර්ධන මහතා රද්දොළුගම එම සංගමයේ මූලස්ථානයේ පැවති ප්‍රවෘත්ති සාකච්ඡාවක දී පැවසීය",
+    "content": "පාන් ගෙඩියක මිළ සහ අනෙකුත් සියලුම කෙටි කෑම වල මිළ රුපියල් 5.00 ක් අද (30) මධ්‍යම රාත්‍රී සිට ඉහළ නැංවීමට තම විධායක සභාවේ තීරණය මත සමස්ථ ලංකා බේකරි හිමියන්ගේ සංගමයේ සභාපති එන්.කේ.ජයවර්ධන මහතා රද්දොළුගම එම සංගමයේ මූලස්ථානයේ පැවති ප්‍රවෘත්ති සාකච්ඡාවක දී පැවසීය",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_563d368558.jpg",
+    "published_at": "2026-10-30 11:16:00",
+    "published_at_ms": 1793339160000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/පාන්-මිල-ඉහළට/1-700029",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894952
   },
   {
     "id": "itn_843527",
@@ -407,13 +534,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/07/yoshitha.jpg",
     "published_at": "2026-10-30 11:02:24",
     "published_at_ms": 1793338344000,
-    "fetched_at_ms": 1793356238342,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843527/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238342
   },
   {
     "id": "itn_843521",
@@ -424,13 +552,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/wayu.jpg",
     "published_at": "2026-10-30 10:51:49",
     "published_at_ms": 1793337709000,
-    "fetched_at_ms": 1793356238342,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843521/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238342
   },
   {
     "id": "itn_843516",
@@ -441,13 +570,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/nnnnnnnnnnnnnnn-1.jpg",
     "published_at": "2026-10-30 10:48:21",
     "published_at_ms": 1793337501000,
-    "fetched_at_ms": 1793356238342,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843516/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238342
   },
   {
     "id": "itn_843512",
@@ -458,13 +588,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/arrest.jpg",
     "published_at": "2026-10-30 10:31:12",
     "published_at_ms": 1793336472000,
-    "fetched_at_ms": 1793356238343,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843512/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238343
   },
   {
     "id": "itn_843509",
@@ -475,30 +606,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/88888888888888.jpg",
     "published_at": "2026-10-30 10:18:00",
     "published_at_ms": 1793335680000,
-    "fetched_at_ms": 1793356238343,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843509/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
-  },
-  {
-    "id": "itn_843505",
-    "title": "X-Men සහ Star Trek වීරයා Patrick Stewart අභාවප්‍රාප්ත වෙයි",
-    "category": "දේශීය පුවත්",
-    "summary": "X-men ඇතුළු චිත්‍රපට මාලාවන් හරහා ලොව පුරා ජනප්‍රිය වූ බ්‍රිතාන්‍ය ජාතික හොලිවුඩ් නළු පැට්‍රික් ස්ටුවර්ට් (Patrick Stewart) අභාවප්‍රාප්ත වී ඇති බව විදෙස් මාධ්‍ය වාර්තා කරනවා. බ්‍රිතාන්‍ය ජාතික හොලිවුඩ් නළු Patrick Stewart අභාවප්‍රාප්ත වනවිට 86වන වියේ පසුවුණා. නාට්‍ය සඳහා ඔහුගේ දායකත්වය වෙනුවෙන් 2010 දී දෙවන එලිසබෙත් රැජින විසින් නයිට් පදවිය ලබා ගත් ස්ටුවර්ට්, ලොස් ඇන්ජලීස් […]",
-    "content": "X-men ඇතුළු චිත්‍රපට මාලාවන් හරහා ලොව පුරා ජනප්‍රිය වූ බ්‍රිතාන්‍ය ජාතික හොලිවුඩ් නළු පැට්‍රික් ස්ටුවර්ට් (Patrick Stewart) අභාවප්‍රාප්ත වී ඇති බව විදෙස් මාධ්‍ය වාර්තා කරනවා. බ්‍රිතාන්‍ය ජාතික හොලිවුඩ් නළු Patrick Stewart අභාවප්‍රාප්ත වනවිට 86වන වියේ පසුවුණා. නාට්‍ය සඳහා ඔහුගේ දායකත්වය වෙනුවෙන් 2010 දී දෙවන එලිසබෙත් රැජින විසින් නයිට් පදවිය ලබා ගත් ස්ටුවර්ට්, ලොස් ඇන්ජලීස් හි ඔහුගේ නිවසේදී මිය ගිය බව ඔහුගේ X ගිණුමේ ප්‍රකාශයක දැක්වෙන බවයි සඳහන් වන්නේ. 1987 දී ස්ටාර් ට්‍රෙක්: ද නෙක්ස්ට් ජෙනරේෂන් හි කැප්ටන් ජීන්-ලූක් පිකාඩ් ලෙස රඟපා ඇති බවයි එරට මාධ්‍ය වාර්තා සඳහන් කරන්නේ. ඔහු 2000 දී මුල් පිටපතෙන් ආරම්භ වී එක්ස්-මෑන් චිත්‍රපට කිහිපයක මහාචාර්ය චාල්ස් සේවියර් ලෙස රඟපෑ අතර මෑතකදී එළඹෙන ඇවෙන්ජර්ස්: ඩූම්ස්ඩේ සඳහා පූර්ව ප්‍රචාරක පටයක පෙනී සිටියා",
-    "image_url": "",
-    "published_at": "2026-10-30 10:04:46",
-    "published_at_ms": 1793334886000,
-    "fetched_at_ms": 1793356238343,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/30/843505/",
-    "is_top_story": false,
-    "importance_score": 25,
-    "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238343
   },
   {
     "id": "itn_843502",
@@ -509,13 +624,14 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/hansaka.jpg",
     "published_at": "2026-10-30 10:01:40",
     "published_at_ms": 1793334700000,
-    "fetched_at_ms": 1793356238343,
+    "fetched_at_ms": 1793356892713,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843502/",
     "is_top_story": false,
     "importance_score": 25,
     "importance_tier": "feed_only",
-    "importance_reasons": []
+    "importance_reasons": [],
+    "first_seen_ms": 1793356238343
   },
   {
     "id": "itn_843498",
@@ -526,15 +642,50 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/SL-5.jpg",
     "published_at": "2026-10-30 09:46:52",
     "published_at_ms": 1793333812000,
-    "fetched_at_ms": 1793356238344,
+    "fetched_at_ms": 1793356892714,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/30/843498/",
     "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
+    "importance_score": 75,
+    "importance_tier": "high",
     "importance_reasons": [
       "major_sport"
-    ]
+    ],
+    "first_seen_ms": 1793356238344
+  },
+  {
+    "id": "lk_1_700023",
+    "title": "උනාකූරාව වෙරළේ තරුණයෝ දෙදෙනෙක් සැඟවෙති",
+    "category": "දේශීය පුවත්",
+    "summary": "තංගල්ල උනාකූරුව මුහුදු තීරයේ දිය නෑමට ගිය තරුණයන් දෙදෙනකු රළ පහරට හසුව මුහුදට ගසාගෙන ගොස් ඇති අතර ඊට පැය කිහිපයකට පසුව පොලිස් ජීවිත ආරක්ෂක නිලධාරීන් විසින් එක් අයෙකුගේ සිරුර සොයාගෙන තිබේ",
+    "content": "තංගල්ල උනාකූරුව මුහුදු තීරයේ දිය නෑමට ගිය තරුණයන් දෙදෙනකු රළ පහරට හසුව මුහුදට ගසාගෙන ගොස් ඇති අතර ඊට පැය කිහිපයකට පසුව පොලිස් ජීවිත ආරක්ෂක නිලධාරීන් විසින් එක් අයෙකුගේ සිරුර සොයාගෙන තිබේ",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_306717e04b.png",
+    "published_at": "2026-10-30 05:35:00",
+    "published_at_ms": 1793318700000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/උනාකූරාව-වෙරළේ-තරුණයෝ-දෙදෙනෙක්-සැඟවෙති/1-700023",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894952
+  },
+  {
+    "id": "lk_1_700022",
+    "title": "අක්කාගෙන් මතට හුරුවූ බලවයක්කාර අයියා නගෝ බාර දෙන්නේ කාටද?",
+    "category": "දේශීය පුවත්",
+    "summary": "අයිස් මත්ද්‍රව්‍යවලට ඇබ්බැහි වී ඇතැයි කියමින් අධිකරණයට ඉදිරිපත් කළ බාලවයස්කාර අයියා-නගෝ බාරදිය හැකි ඥාතීන් කවුරුන්ද? යන්න සොයා බලා වහාම වාර්තාවක් ඉදිරිපත් කිරීමට මාලිගාකන්ද මහෙස්ත්‍රාත් ජනිතා රෝෂණී පෙරේරා මහත්මිය කොළඹ පරිවාස නිලධාරිනියට නියම කළාය",
+    "content": "අයිස් මත්ද්‍රව්‍යවලට ඇබ්බැහි වී ඇතැයි කියමින් අධිකරණයට ඉදිරිපත් කළ බාලවයස්කාර අයියා-නගෝ බාරදිය හැකි ඥාතීන් කවුරුන්ද? යන්න සොයා බලා වහාම වාර්තාවක් ඉදිරිපත් කිරීමට මාලිගාකන්ද මහෙස්ත්‍රාත් ජනිතා රෝෂණී පෙරේරා මහත්මිය කොළඹ පරිවාස නිලධාරිනියට නියම කළාය",
+    "image_url": "https://bmkltsly13vb.compat.objectstorage.ap-mumbai-1.oraclecloud.com/cdn.lankadeepa.lk/assets/uploads/image_01dd297901.jpg",
+    "published_at": "2026-10-30 05:23:00",
+    "published_at_ms": 1793317980000,
+    "fetched_at_ms": 1793356894952,
+    "source_name": "ලංකාදීප",
+    "source_url": "https://www.lankadeepa.lk/latest_news/අක්කාගෙන්-මතට-හුරුවූ-බලවයක්කාර-අයියා-නගෝ-බාර-දෙන්නේ-කාටද-/1-700022",
+    "importance_score": 25,
+    "importance_tier": "feed_only",
+    "importance_reasons": [],
+    "first_seen_ms": 1793356894952
   },
   {
     "id": "itn_842837",
@@ -545,15 +696,16 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/ghjk.jpg",
     "published_at": "2026-10-27 19:24:29",
     "published_at_ms": 1793109269000,
-    "fetched_at_ms": 1793356239435,
+    "fetched_at_ms": 1793356893815,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/27/842837/",
     "is_top_story": false,
     "importance_score": 49,
-    "importance_tier": "standard",
+    "importance_tier": "feed_only",
     "importance_reasons": [
       "sports_news"
-    ]
+    ],
+    "first_seen_ms": 1793356239435
   },
   {
     "id": "itn_842812",
@@ -564,15 +716,16 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/sssssssssss.jpg",
     "published_at": "2026-10-27 18:03:19",
     "published_at_ms": 1793104399000,
-    "fetched_at_ms": 1793356239435,
+    "fetched_at_ms": 1793356893815,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/27/842812/",
     "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
+    "importance_score": 75,
+    "importance_tier": "high",
     "importance_reasons": [
       "major_sport"
-    ]
+    ],
+    "first_seen_ms": 1793356239435
   },
   {
     "id": "itn_842647",
@@ -583,15 +736,16 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/SL-PK-1.jpg",
     "published_at": "2026-10-27 08:49:18",
     "published_at_ms": 1793071158000,
-    "fetched_at_ms": 1793356239435,
+    "fetched_at_ms": 1793356893816,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/27/842647/",
     "is_top_story": false,
     "importance_score": 49,
-    "importance_tier": "standard",
+    "importance_tier": "feed_only",
     "importance_reasons": [
       "sports_news"
-    ]
+    ],
+    "first_seen_ms": 1793356239435
   },
   {
     "id": "itn_842408",
@@ -602,109 +756,15 @@
     "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/pakisthan.jpg",
     "published_at": "2026-10-26 08:37:48",
     "published_at_ms": 1792984068000,
-    "fetched_at_ms": 1793356239435,
+    "fetched_at_ms": 1793356893816,
     "source_name": "ITN News",
     "source_url": "https://www.itnnews.lk/2026/10/26/842408/",
     "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
+    "importance_score": 75,
+    "importance_tier": "high",
     "importance_reasons": [
       "major_sport"
-    ]
-  },
-  {
-    "id": "itn_841790",
-    "title": "නව තරග වාර්තාවක් සමගින් ජනනි ධනංජනාගෙන් ශ්‍රී ලංකාවට රන් පදක්කමක්",
-    "category": "ක්‍රීඩා පුවත්",
-    "summary": "ජපානයේදී පැවැත්වෙන 5 වන ආසියානු පැරා ක්‍රීඩා උළෙලේ (Asian Para Games) කාන්තා දුර පැනීම (T47) ඉසව්වෙන් නව තරග වාර්තාවක් ද තබමින් රන් පදක්කම දිනා ගැනීමට ශ්‍රී ලංකාවේ ජනනි ධනංජනා වික්‍රමසිංහ සමත් වුණා. ඇය දැක්වු දක්‍ෂතාව මීටර් 5 යි සෙන්ටිමීටර් 52 ක්. ඉන්දීය ක්‍රීඩිකාවක විසින් ඉසව්වේ රිදී පදක්කම දිනා ගත්තා. ලෝකඩ පදක්කම දිනා ගත්තේ චීන ක්‍රිඩිකාවක්. […]",
-    "content": "ජපානයේදී පැවැත්වෙන 5 වන ආසියානු පැරා ක්‍රීඩා උළෙලේ (Asian Para Games) කාන්තා දුර පැනීම (T47) ඉසව්වෙන් නව තරග වාර්තාවක් ද තබමින් රන් පදක්කම දිනා ගැනීමට ශ්‍රී ලංකාවේ ජනනි ධනංජනා වික්‍රමසිංහ සමත් වුණා. ඇය දැක්වු දක්‍ෂතාව මීටර් 5 යි සෙන්ටිමීටර් 52 ක්. ඉන්දීය ක්‍රීඩිකාවක විසින් ඉසව්වේ රිදී පදක්කම දිනා ගත්තා. ලෝකඩ පදක්කම දිනා ගත්තේ චීන ක්‍රිඩිකාවක්. ශ්‍රී ලංකාව නියෝජනය කරමින් සදුනි ජයසුන්දර ද මෙම ඉසව්ව සඳහා තරග වැදුණා. මීටර් 4 යි සෙන්ටිමීටර් 11 ක දක්‍ෂතාවක් දැක්වූ ඇය තරගය නිමා කළේ 4 වෙනියා ලෙසයි. මෙහිදි රන් පදක්කම දිනා ගත් ජනනි ධනංජනා වික්‍රමසිංහ මෙම තරගාවලියේ මෙතෙක් දිනාගත් දෙවන පදක්කමද මෙය වනවා. මීට පෙර T47 මීටර් 200 කාන්තා ධාවන ඉසව්වේ රිදී පදක්කම දිනා ගැනිමටද ඇය සමත් වුණා. මෙම විශිෂ්ට ජයග්‍රහණයත් සමග මෙවර ආසියානු පැරා ක්‍රීඩා උළෙලේ ශ්‍රී ලංකාවේ පදක්කම් ලැයිස්තුව තවදුරටත් ශක්තිමත් කිරීමට ඇයට හැකිවූ අතර, ජාත්‍යන්තර පැරා මලල ක්‍රීඩා පිටිය හමුවේ ශ්‍රී ලංකා නාමය නැවතත් බැබළවීමට ඇය සමත් වී තිබෙනවා",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/janani.jpg",
-    "published_at": "2026-10-23 10:00:14",
-    "published_at_ms": 1792729814000,
-    "fetched_at_ms": 1793356239435,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/23/841790/",
-    "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
-    "importance_reasons": [
-      "major_sport"
-    ]
-  },
-  {
-    "id": "itn_841773",
-    "title": "ශ්‍රී ලංකාවේ විශිෂ්ට ජය ගැන කුමාර් සංගක්කාරගෙන් විශේෂ සටහනක්",
-    "category": "ක්‍රීඩා පුවත්",
-    "summary": "පවන්, දසුන්, ජනිත් සහ අවිශ්කගේ සුවිශේෂී දක්ෂතා හේතුවෙන් ශ්‍රී ලංකාව අත්කර ගන්නා ලද ඓතිහාසික ජයග්‍රහණය ඉහළින් සැමරීමට ශ්‍රී ලංකා කණ්ඩායමට හිමිකම් ඇති බව ශ්‍රී ලංකා හිටපු ක්‍රිකට් නායක කුමාර් සංගක්කාර පවසනවා. සිය ‘X’ ගිණුමේ සටහනක් තබමින් ඔහු පෙන්වා දුන්නේ, ජයග්‍රහණයේ ප්‍රීතිය විඳගන්නා අතරතුරම, ඉදිරි අභියෝග ජයගැනීම සඳහා කණ්ඩායමේ අවධානය යොමුවීම අනිවාර්යය බවයි. ලබන වසරේ ඔක්තෝබර් […]",
-    "content": "පවන්, දසුන්, ජනිත් සහ අවිශ්කගේ සුවිශේෂී දක්ෂතා හේතුවෙන් ශ්‍රී ලංකාව අත්කර ගන්නා ලද ඓතිහාසික ජයග්‍රහණය ඉහළින් සැමරීමට ශ්‍රී ලංකා කණ්ඩායමට හිමිකම් ඇති බව ශ්‍රී ලංකා හිටපු ක්‍රිකට් නායක කුමාර් සංගක්කාර පවසනවා. සිය ‘X’ ගිණුමේ සටහනක් තබමින් ඔහු පෙන්වා දුන්නේ, ජයග්‍රහණයේ ප්‍රීතිය විඳගන්නා අතරතුරම, ඉදිරි අභියෝග ජයගැනීම සඳහා කණ්ඩායමේ අවධානය යොමුවීම අනිවාර්යය බවයි. ලබන වසරේ ඔක්තෝබර් මාසයේදී දකුණු අප්‍රිකාවේ පැවැත්වීමට නියමිත ලෝක කුසලාන ක්‍රිකට් තරගාවලිය ඉලක්ක කරගනිමින් කණ්ඩායම ශක්තිමත් කිරීමේ දීර්ඝකාලීන සැලසුම් ක්‍රියාත්මක කිරීමේ වගකීම ශ්‍රී ලංකා ක්‍රිකට් බලධාරීන් සතු බවද ඔහු පෙන්වා දෙනවා. ඒ අනුව කණ්ඩායම ඉහළම තත්ත්වයට ගෙන ඒම සඳහා මෙම ජයග්‍රහණයේ සිට ක්‍රමානුකූල වැඩපිළිවෙලක් සකස් කිරීම අත්‍යාවශ්‍ය බව කුමාර් සංගක්කාර සිය ‘X’ සටහනෙන් පෙන්වා දෙනවා. පාකිස්තානයේ පැවැත්වෙන තුන්කොන් එක්දින ක්‍රිකට් තරගාවලිය යටතේ ශ්‍රී ලංකාව සහ එංගලන්තය අතර ඊයේ පැවති තරගය නිමාවට පත්වූයේ ක්‍රිකට් වාර්තා පොත් උඩුයටිකුරු කරමින්, අමතක නොවන වාර්තා රැසක්ම ක්‍රිකට් වංශකතාවට එක් කරමින්. එංගලන්ත කණ්ඩායම විසින් ශ්‍රී ලංකාවට ලකුණු 430ක අතිදැවැන්ත ඉලක්කයක් ලබාදුන්නද, එම අභියෝගාත්මක ඉලක්කය රාත්‍රී ආලෝක ධාරා මධ්‍යයේ පහසුවෙන් හඹාගිය ශ්‍රී ලංකා ක්‍රීඩකයින්, එතෙක් සියලු ගෞරවයන් අත්පත් කරගෙන සිටි එංගලන්තය බින්දුවටම ඇද දමමින් විශිෂ්ට ජයග්‍රහණයක් අත්කරගැනීමට සමත්වුණා. ඒ අනුව ඊයේ තරගයේදී අලුත් වූ සියලුම වාර්තාවන් පහතින්, ශ්‍රී ලංකා කණ්ඩායම එංගලන්තයට එරෙහිව ලකුණු 430ක ඉලක්කය හඹායෑම එක්දින ක්‍රිකට් ඉතිහාසයේ කණ්ඩායමක් සාර්ථකව හඹාගිය දෙවන ඉහළම ලකුණු සංඛ්‍යාව. ශ්‍රී ලංකාවේ මෙම ලකුණු හඹායාම ‘List A’ක්‍රිකට් ඉතිහාසයේද දෙවන සාර්ථක ලකුණු හඹායෑම වේ. ‘List A’ ක්‍රිකට් ඉතිහාසයේ ලකුණු 400ට වැඩි ඉලක්කයන් සාර්ථකව හඹාගිය අවස්ථා 5න් 4ක්ම වාර්තා වී ඇත්තේ 2025 දෙසැම්බර් මාසයෙන් පසුව වීම විශේෂත්වයක්. කණ්ඩායම් දෙකම එකතුව ලකුණු 859ක් රැස්කළ අතර, එය එක්දින තරගයකදී වාර්තා වූ දෙවන ඉහළම සමස්ත ලකුණු සංඛ්‍යාවයි. ඉහළම සමස්ත ලකුණු සංඛ්‍යාව වන්නේ 2006 දී ජොහැන්නස්බර්ග් හිදී දකුණු අප්‍රිකාව සහ ඔස්ට්‍රේලියාව අතර පැවැත්වුණු තරගයේදී වාර්තා වූ ලකුණු 872යි. බෲක් ලබාගත් ලකුණු 202, එක්දින ක්‍රිකට් ඉතිහාසයේ කණ්ඩායමක් පරාජයට පත් වූ තරගයකදී වාර්තා වූ පළමු ද්විත්ව ශතකයයි. මීට පෙර පරාජය වූ තරගයකදී පිතිකරුවෙකු ලබා තිබූ වැඩිම එක්දින ලකුණු සංඛ්‍යාව වූයේ 2009 වසරේදී බංග්ලාදේශයට එරෙහිව සිම්බාබ්වේ පිතිකරු චාල්ස් කොවෙන්ට්‍රි නොදැවී ලබාගත් ලකුණු 194යි. 25 වන පන්දුවාරය අවසානයේ ශ්‍රී ලංකා කණ්ඩායම කඩුලු 2කට ලකුණු 169ක් ලබා සිටි අතර, ජයග්‍රහණය සඳහා අවසන් පන්දුවාර 25 තුළදී ලකුණු 261ක් අවශ්‍යව තිබුණි. එක්දින තරගයක අවසන් පන්දුවාර 25 තුළදී කණ්ඩායමක් සාර්ථකව හඹාගිය වැඩිම ලකුණු සංඛ්‍යාව මෙය වෙනවා. මීට පෙර එම වාර්තාවට හිමිකම් කීවේ 2011 ලෝක කුසලානයේදී එංගලන්තයට එරෙහිව ලකුණු 215ක් හඹා ගිය අයර්ලන්ත කණ්ඩායමයි. එංගලන්ත පන්දු යවන ක්‍රීඩක සෑම් කරන්ට එරෙහිව ශ්‍රී ලංකා පිතිකරුවෝ ලකුණු 103ක් රැස්කළ අතර, එය පිරිමි එක්දින තරගයකදී එංගලන්ත පන්දු යවන්නෙකු ලබාදුන් වැඩිම ලකුණු සංඛ්‍යාව වෙනවා. මීට පෙරද වැඩිම ලකුණු සංඛ්‍යාවක් ලබා දී තිබුණේ සෑම් කරන් විසිනි. 2023 දී කොදෙව් දූපත්හිදී කොදෙව් පිතිකරුවන් ලකුණු 98ක් රැස්කර තිබුණා. සමස්ත තරගයේදී පිතිකරුවන් 8 දෙනෙකු අර්ධ ශතක හෝ ඊට වැඩි ලකුණු සංඛ්‍යාවන් රැස්කළ අතර, එය එක්දින තරගයකදී වාර්තා වූ වැඩිම ලකුණු 50ට වැඩි ඉනිම් සංඛ්‍යාව සමකිරීමක්. මීට පෙර අර්ධ ශතක 8 බැගින් වාර්තා වූ එක්දින තරග 3ම ආසියානු උපමහාද්වීපය තුළ පැවැති තරගවීම විශේෂත්වයක්. පාකිස්තානය තුළ වාර්තා වී තිබූ ඉහළම එක්දින තරග ලකුණු සංඛ්‍යාව වූයේ 2015 දී ලාහෝර් හිදී සිම්බාබ්වේ පිලට එරෙහිව පාකිස්තානය කඩුලු 3කට ලබාගත් ලකුණු 375යි. රාවල්පින්ඩි හිදී පළමුවෙන් පන්දුවට පහරදුන් එංගලන්තය ලකුණු 54කින් එම වාර්තාව අලුත් කළ අතර, පසුව ශ්‍රී ලංකාව එම සියලු වාර්තා අභිබවා යමින් තරගය ජයග්‍රහණය කිරීමට සමත්වුණා. හැරී බෲක් ලකුණු 202ක් රැස් කරමින් එක්දින ක්‍රිකට් ඉතිහාසයේ ද්විත්ව ශතකයක් ලබාගත් පළමු එංගලන්ත පිතිකරුවා බවට පත්වුණා. මීට පෙර එංගලන්ත ක්‍රීඩකයෙකු ලබාගෙන තිබූ වැඩිම එක්දින ලකුණු සංඛ්‍යාව වූයේ 2023 වසරේදී නවසීලන්තයට එරෙහිව බෙන් ස්ටෝක්ස් ලබාගත් ලකුණු 182.. පාකිස්තානයේදී එක්දින ද්විත්ව ශතකයක් රැස්කළ පළමු ක්‍රීඩකයා බවට බෲක් පත්වුණා. මීට පෙර එරට තුළ වාර්තා වී තිබූ වැඩිම එක්දින ලකුණු සංඛ්‍යාව වූයේ 1996 ලෝක කුසලාන තරගාවලියේදී UAE කණ්ඩායමට එරෙහිව ගැරී කිර්ස්ටන් නොදැවී ලබාගත් ලකුණු 188යි. වසර 30කට පෙර තමා පිහිට වූ එම වාර්තාව බිඳවැටෙන අයුරු ශ්‍රී ලංකා කණ්ඩායමේ වත්මන් ප්‍රධාන පුහුණුකරු ලෙසින් ඔහු සියැසින් බලා ගත්තා. තම ද්විත්ව ශතකය පන්දු 114කින් සම්පූර්ණ කිරීමට බෲක් සමත් වූ අතර, එය එක්දින ක්‍රිකට් ඉතිහාසයේ වේගවත්ම ද්විත්ව ශතකය ලෙස වාර්තාව අතරට එක්වූ අතර මීට පෙර වේගවත්ම ද්විත්ව ශතකයට හිමිකම් කීවේ පසුගිය මස ගුවහාටි හිදී බ.ඉ. කොදෙව් කණ්ඩායමට එරෙහිව පන්දු 117කින් ලබාගත් ෂුබ්මන් ගිල්. ආරම්භක පිතිකරුවෙකු නොවන අයෙකු එක්දින තරගයකදී රැස්කළ වැඩිම ලකුණු සංඛ්‍යාව ලෙසද බෲක්ගේ ලකුණු 202 වාර්තා අතරට එක්වුණා. ඔහු 2023 එක්දින ලෝක කුසලාන තරගාවලියේදී ඇෆ්ගනිස්තානයට එරෙහිව අංක 6 පිතිකරු ලෙස ග්ලෙන් මැක්ස්වෙල් නොදැවී ලබාගත් ලකුණු 201 සීමාව පසුකර යාමටද සමත්වුණා. අංක 4 පිතිකරුවෙකු රැස්කර තිබූ වැඩිම ලකුණු සංඛ්‍යාව වූයේ 1984 වසරේ මැන්චෙස්ටර් හිදී එංගලන්තයට එරෙහිව විව් රිචර්ඩ්ස් නොදැවී ලබාගත් ලකුණු 189 වාර්තාවද බෘෘක් මෙහිදී බිඳ දැමූවා. බෲක් ඇතුළුව පිරිමි එක්දින ක්‍රිකට් ඉතිහාසයේ නායකයෙකු ලෙස ද්විත්ව ශතක ලබාගත් පිතිකරුවන් සංඛ්‍යාව 4ක්. අනෙක් ක්‍රීඩකයින් වන්නේ 2011 දී බ.ඉ. කොදෙව් පිලට එරෙහිව විරේන්දර් සෙවාග් , 2017 දී ශ්‍රී ලංකාවට එරෙහිව රෝහිත් ශර්මා සහ ෂුබ්මන් ගිල්. මීට පෙර එංගලන්ත නායකයෙකු ලබා තිබූ වැඩිම එක්දින ලකුණු සංඛ්‍යාව වූයේ 2011 ලෝක කුසලානයේදී ඉන්දියාවට එරෙහිව ඇන්ඩෲ ස්ට්‍රවුස් ලබාගත් ලකුණු 158යි",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/Web-Card-2025-October-1-10.jpg",
-    "published_at": "2026-10-23 09:45:55",
-    "published_at_ms": 1792728955000,
-    "fetched_at_ms": 1793356239436,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/23/841773/",
-    "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
-    "importance_reasons": [
-      "major_sport"
-    ]
-  },
-  {
-    "id": "itn_841249",
-    "title": "රෝනාල්ඩෝට තරග තහනමක්",
-    "category": "ක්‍රීඩා පුවත්",
-    "summary": "පෘතුගාල ජාතික කණ්ඩායමෙන් හදිසියේ ඉවත්ව යාම හේතුවෙන් එරට පාපන්දු සම්මේලනය විසින් ක්‍රිස්ටියානෝ රොනාල්ඩෝට දින 30ක තරග තහනමක් සහ යුරෝ 255ක දඩ මුදලක් නියම කර තිබෙන බව විදෙස් මාධ්‍ය වාර්තා කරනවා. පසුගිය සැප්තැම්බර් මාසයේදී නෝර්වේ කණ්ඩායම සමඟ පැවති තරගයේදී ආදේශක ක්‍රීඩකයෙකු ලෙස ක්‍රීඩා කිරීමට නොලැබීම සහ ඔක්තෝබර් 01 වන දින ඩෙන්මාර්කය සමඟ පැවැත්වෙන තරගයේ ආරම්භක ක්‍රීඩකයින් […]",
-    "content": "පෘතුගාල ජාතික කණ්ඩායමෙන් හදිසියේ ඉවත්ව යාම හේතුවෙන් එරට පාපන්දු සම්මේලනය විසින් ක්‍රිස්ටියානෝ රොනාල්ඩෝට දින 30ක තරග තහනමක් සහ යුරෝ 255ක දඩ මුදලක් නියම කර තිබෙන බව විදෙස් මාධ්‍ය වාර්තා කරනවා. පසුගිය සැප්තැම්බර් මාසයේදී නෝර්වේ කණ්ඩායම සමඟ පැවති තරගයේදී ආදේශක ක්‍රීඩකයෙකු ලෙස ක්‍රීඩා කිරීමට නොලැබීම සහ ඔක්තෝබර් 01 වන දින ඩෙන්මාර්කය සමඟ පැවැත්වෙන තරගයේ ආරම්භක ක්‍රීඩකයින් අතරට තමා ඇතුළත් නොවන බව දැනගැනීමෙන් පසු 41 හැවැරිදි ක්‍රිස්ටියානෝ මෙම පියවර ගෙන ඇති බවයි වාර්තා වන්නේ. පෘතුගාල පුහුණුකරු ජෝර්ජ් ජෙසස් (Jorge Jesus) තමාට දුන් පොරොන්දු දෙවරක්ම කඩ කළ බවත්, එය “ප්‍රතිපත්ති උල්ලංඝනය කිරීමක් සහ විශ්වාසය පළුදු කිරීමක්” බවත් පවසමින් රොනාල්ඩෝ දිගු ප්‍රකාශයක් ද නිකුත් කර තිබුණා. කෙසේවෙතත් පෘතුගාල පාපන්දු සම්මේලනයේ සභාපති ප්‍රකාශ කර ඇත්තේ ගැටලුව විසඳුණු පසු රොනාල්ඩෝ යළි කණ්ඩායමට කැඳවීමට කටයුුතු කරන බවයි",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/Web-Card-2025-October-1-8.jpg",
-    "published_at": "2026-10-21 09:40:40",
-    "published_at_ms": 1792555840000,
-    "fetched_at_ms": 1793356239436,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/21/841249/",
-    "is_top_story": false,
-    "importance_score": 49,
-    "importance_tier": "standard",
-    "importance_reasons": [
-      "sports_news"
-    ]
-  },
-  {
-    "id": "itn_840997",
-    "title": "ආසියානු පැරා ක්‍රීඩා උලෙළේදී එම්. සෆ්රාන්ගෙන් ශ්‍රී ලංකාවට ලෝකඩ පදක්කමක්",
-    "category": "ක්‍රීඩා පුවත්",
-    "summary": "ජපානයේ නගෝ­යා­හිදී පැවැ­ත්වෙන 5 වැනි ආසි­යානු ක්‍රීඩා උලෙ­ළේදී ශ්‍රී ලංකා­වට පළමු පද­ක්කම දිනා දීමට එම්. සෆ්රාන් සමත්ව තිබෙනවා. T47 කාණ්ඩ­යෙන් පිරිමි දුර පැනීමේ ඉස­ව්වට එක් වූ සෆ්රාන් මීටර් 6.55ක දුරක් සට­හන් කර­මින් ලෝකඩ පද­ක්කම දිනා ගැනී­මට සමත් වුණා. මේ ඉස­ව්වට ශ්‍රී ලංකා­වෙන් ක්‍රීඩ­ක­යන් තිදෙ­නෙක් එක් වූ අතර, යූසුප් සල්මාන්ට මීටර 6.40කින් හිමි වූයේ සිව්වැනි ස්ථාන­ය­ටත්, […]",
-    "content": "ජපානයේ නගෝ­යා­හිදී පැවැ­ත්වෙන 5 වැනි ආසි­යානු ක්‍රීඩා උලෙ­ළේදී ශ්‍රී ලංකා­වට පළමු පද­ක්කම දිනා දීමට එම්. සෆ්රාන් සමත්ව තිබෙනවා. T47 කාණ්ඩ­යෙන් පිරිමි දුර පැනීමේ ඉස­ව්වට එක් වූ සෆ්රාන් මීටර් 6.55ක දුරක් සට­හන් කර­මින් ලෝකඩ පද­ක්කම දිනා ගැනී­මට සමත් වුණා. මේ ඉස­ව්වට ශ්‍රී ලංකා­වෙන් ක්‍රීඩ­ක­යන් තිදෙ­නෙක් එක් වූ අතර, යූසුප් සල්මාන්ට මීටර 6.40කින් හිමි වූයේ සිව්වැනි ස්ථාන­ය­ටත්, බුද්ධික ඉන්ද්‍ර­පාල (මී. 6.11) 5 වැනි ස්ථාන­ය­ටත් පත් විය. මේ ඉසව්වේ රන් පද­ක්කම ඉන්දි­යාවේ නිෂාද් කුමාර්ට (මී. 7.11) හිමි වූ අතර, රිදී පද­ක්කම උස්බෙ­කි­ස්තා­නයේ ඔමා­ද්බෙක් කසා­නොව් (මී. 6.99) දිනා ගත්තා",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/safran.jpg",
-    "published_at": "2026-10-20 09:57:00",
-    "published_at_ms": 1792470420000,
-    "fetched_at_ms": 1793356239437,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/20/840997/",
-    "is_top_story": false,
-    "importance_score": 60,
-    "importance_tier": "standard",
-    "importance_reasons": [
-      "major_sport"
-    ]
-  },
-  {
-    "id": "itn_840954",
-    "title": "මන්දගාමීව පන්දු යැවුවාට ශ්‍රී ලංකාවටයි පාකිස්තානයටයි ICCයෙන් දඩ",
-    "category": "ක්‍රීඩා පුවත්",
-    "summary": "පාකිස්ථානයේ රාවල්පින්ඩි හිදී පැවැත්වුණු එක්දින තුන්කොන් ක්‍රිකට් තරගාවලියේ පළමු තරගයේදී මන්දගාමී ලෙස පන්දු යැවීම හේතුවෙන් පාකිස්තාන සහ ශ්‍රී ලංකා කණ්ඩායම් දෙකටම දඩ පනවා තිබෙනවා. ඒ අනුව, නියමිත කාලයට වඩා පන්දු වාර දෙකක් අඩුවෙන් යැවීම හේතුවෙන් පාකිස්තාන කණ්ඩායමට ඔවුන්ගේ තරග ගාස්තුවෙන් 10% ක දඩයක් ද, එක පන්දු වාරයක් අඩුවෙන් යැවීම හේතුවෙන් ශ්‍රී ලංකා කණ්ඩායමට තරග ගාස්තුවෙන් […]",
-    "content": "පාකිස්ථානයේ රාවල්පින්ඩි හිදී පැවැත්වුණු එක්දින තුන්කොන් ක්‍රිකට් තරගාවලියේ පළමු තරගයේදී මන්දගාමී ලෙස පන්දු යැවීම හේතුවෙන් පාකිස්තාන සහ ශ්‍රී ලංකා කණ්ඩායම් දෙකටම දඩ පනවා තිබෙනවා. ඒ අනුව, නියමිත කාලයට වඩා පන්දු වාර දෙකක් අඩුවෙන් යැවීම හේතුවෙන් පාකිස්තාන කණ්ඩායමට ඔවුන්ගේ තරග ගාස්තුවෙන් 10% ක දඩයක් ද, එක පන්දු වාරයක් අඩුවෙන් යැවීම හේතුවෙන් ශ්‍රී ලංකා කණ්ඩායමට තරග ගාස්තුවෙන් 5% ක දඩයක් ද පනවා ඇති බවයි වාර්තා වෙන්නේ. ICC තරග තීරක ජෙෆ් ක්‍රෝ විසින් මෙම දඬුවම් නියම කර තිබෙනවා",
-    "image_url": "https://www.itnnews.lk/wp-content/uploads/2026/10/fdf-1.jpg",
-    "published_at": "2026-10-19 21:37:50",
-    "published_at_ms": 1792426070000,
-    "fetched_at_ms": 1793356239437,
-    "source_name": "ITN News",
-    "source_url": "https://www.itnnews.lk/2026/10/19/840954/",
-    "is_top_story": false,
-    "importance_score": 49,
-    "importance_tier": "standard",
-    "importance_reasons": [
-      "sports_news"
-    ]
+    ],
+    "first_seen_ms": 1793356239435
   }
 ]
