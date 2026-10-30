@@ -266,7 +266,7 @@ def fetch_itn_news():
     # Per page 30 to keep JSON response fast and light
     urls = [
         "https://www.itnnews.lk/wp-json/wp/v2/posts?_embed&per_page=30",
-        "https://www.itnnews.lk/wp-json/wp/v2/posts?categories=80&_embed=wp:featuredmedia&per_page=20"
+        "https://www.itnnews.lk/wp-json/wp/v2/posts?categories=80&_embed=wp:featuredmedia&per_page=6"
     ]
     for url in urls:
         try:
@@ -303,6 +303,11 @@ def fetch_itn_news():
 
                 cats = post.get('categories') or []
                 is_sports = (80 in cats) or is_sports_news(title, body)
+                # Exclude sports stories older than 48 hours to preserve priority for breaking national news
+                now_ms_check = int(time.time() * 1000)
+                if is_sports and (now_ms_check - pub_ms > 48 * 3600 * 1000):
+                    continue
+
                 cat_name = "ක්‍රීඩා පුවත්" if is_sports else ("ප්‍රධාන පුවත" if 86 in cats else "දේශීය පුවත්")
 
                 image_url = ""
@@ -539,9 +544,13 @@ def enrich_article_details(article):
 
         # 1. Image
         if not article.get("image_url"):
-            img_m = re.search(r'property=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
+            img_m = re.search(r'<meta[^>]+property=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']', page_html, re.I)
             if not img_m:
-                img_m = re.search(r'content=["\']([^"\']+)["\']\s+property=["\'](?:og:image|twitter:image)["\']', page_html, re.I)
+                img_m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\'](?:og:image|twitter:image)["\']', page_html, re.I)
+            if not img_m:
+                img_m = re.search(r'property=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
+            if not img_m and "media.adaderanasinhala.lk" in page_html:
+                img_m = re.search(r'(https://media\.adaderanasinhala\.lk/articles/\d+/[^"\'\s>]+)', page_html, re.I)
             if img_m:
                 article["image_url"] = normalize_image_url(img_m.group(1))
 
@@ -648,6 +657,9 @@ def merge_with_history(fresh_articles, existing_articles, now_ms):
         if effective_ms < cutoff_ms or effective_ms > future_limit_ms:
             continue
         if not should_keep_article(article):
+            continue
+        # Drop sports stories older than 48 hours so stale matches never clutter the feed
+        if is_sports_news(article.get("title", ""), article.get("summary", "")) and (now_ms - effective_ms > 48 * 3600 * 1000):
             continue
         recent.append(article)
 
