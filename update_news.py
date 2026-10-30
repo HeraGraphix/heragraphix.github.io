@@ -221,10 +221,15 @@ def calculate_importance(article):
         score += 47
         reasons.append("national_impact")
 
-    major_sport = has_sri_lanka_context(text) and bool(re.search(
+    is_defeat = bool(re.search(
+        r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පරාජය\s*කරයි|පරාජය\s*කරමින්|පැරදෙයි|පැරදුණ|පැරදුන)',
+        text,
+        re.I
+    ))
+    major_sport = has_sri_lanka_context(text) and not is_defeat and bool(re.search(
         r'(ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|'
-        r'තරගාවලිය\s*ජය|ජයග්‍රහණය\s*කරයි|විශිෂ්ට\s*ජයක්|'
-        r'ලකුණු\s*\d+\s*කින්\s*ජය|කඩුලු\s*\d+\s*කින්\s*ජය)',
+        r'තරගාවලිය\s*ජය|විශිෂ්ට\s*ජයක්|'
+        r'ශ්‍රී\s*ලංකාව\s*ජය|ශ්‍රී\s*ලංකා\s*කණ්ඩායම\s*ජය)',
         text,
         re.I,
     ))
@@ -903,7 +908,7 @@ def main():
     # existing backlog. Subsequent runs keep retrying unsent important stories
     # until pacing permits them or they age out.
     initialized = bool(state.get("v3_initialized"))
-    freshness_cutoff_ms = now_ms - 6 * 60 * 60 * 1000
+    freshness_cutoff_ms = now_ms - 2 * 60 * 60 * 1000  # Strict 2-hour window: old news never alerts
     candidates = []
     if initialized:
         candidates = [

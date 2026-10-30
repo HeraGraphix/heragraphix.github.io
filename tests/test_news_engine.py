@@ -62,6 +62,16 @@ class NewsEngineTests(unittest.TestCase):
         scored = engine.calculate_importance(value)
         self.assertEqual(scored["importance_tier"], "feed_only")
 
+    def test_sri_lanka_match_defeat_stays_feed_only(self):
+        value = article(
+            "sport-defeat",
+            "පාකිස්තානයට ලකුණු 82ක දැවැන්ත ජයක් – ශ්‍රී ලංකාවට පරාජය",
+            int(time.time() * 1000),
+            category="ක්‍රීඩා පුවත්",
+        )
+        scored = engine.calculate_importance(value)
+        self.assertEqual(scored["importance_tier"], "feed_only")
+
     def test_history_merge_prunes_stale_items_and_sorts_newest_first(self):
         now_ms = int(time.time() * 1000)
         fresh = article("new", "ඉන්ධන මිල සංශෝධනය අද ප්‍රකාශයට", now_ms - 60_000)
