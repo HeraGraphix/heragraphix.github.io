@@ -57,25 +57,36 @@ HTTP_SESSION.headers.update({
 def get_now_sl():
     return datetime.now(SL_TIMEZONE)
 
-def http_get(url, timeout=12):
+def http_get(url, timeout=18):
     try:
         resp = HTTP_SESSION.get(url, timeout=timeout)
         if resp.status_code == 200 and resp.text:
             return resp.text
+        print(f"Notice: HTTP GET {url} status {resp.status_code}")
     except Exception as e:
-        # Fallback to curl if python requests encounters any network issue
+        # Try with verify=False if SSL handshake or cert issue
         try:
-            import subprocess
-            cmd = [
-                "curl", "-s", "-L", "--compressed", "--max-time", str(timeout),
-                "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
-                url
-            ]
-            res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
-            if res.returncode == 0 and res.stdout:
-                return res.stdout
+            resp = HTTP_SESSION.get(url, timeout=timeout, verify=False)
+            if resp.status_code == 200 and resp.text:
+                return resp.text
         except Exception:
             pass
+
+    # Robust fallback to curl with -k (insecure) and compressed
+    try:
+        import subprocess
+        cmd = [
+            "curl", "-s", "-k", "-L", "--compressed", "--max-time", str(timeout),
+            "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "-H", "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            url
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore")
+        if res.returncode == 0 and res.stdout and len(res.stdout.strip()) > 20:
+            return res.stdout
+    except Exception as err:
+        print(f"Notice: Curl failed for {url}: {err}")
+
     return None
 
 def clean_text(text):
@@ -366,9 +377,11 @@ def fetch_adaderana_news():
     ]
     raw = None
     for url in rss_urls:
-        raw = http_get(url, timeout=8)
+        raw = http_get(url, timeout=18)
         if raw and ("<rss" in raw or "<channel" in raw):
             break
+        else:
+            raw = None
 
     if raw:
         try:
