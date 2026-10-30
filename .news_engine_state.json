@@ -1,10 +1,11 @@
 {
   "budget_day": "2026-10-30",
-  "daily_count": 1,
+  "daily_count": 2,
   "budget_hour": "2026-10-30-14",
-  "hourly_count": 0,
-  "last_notification_ms": 1793335230101,
+  "hourly_count": 1,
+  "last_notification_ms": 1793351229852,
   "recent_notified_keys": [
-    "lk_48_567555"
+    "lk_48_567555",
+    "lk_1_700021"
   ]
 }
