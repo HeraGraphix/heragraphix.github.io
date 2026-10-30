@@ -72,8 +72,10 @@ def http_get(url, timeout=20):
         )
         if resp.status_code == 200 and resp.text:
             return resp.text
-    except Exception:
-        pass
+        else:
+            print(f"cffi notice: GET {url} status {resp.status_code}")
+    except Exception as e:
+        print(f"cffi notice: GET {url} error: {e}")
 
     # 2. Fallback: Standard requests Session
     try:
@@ -391,7 +393,8 @@ def fetch_adaderana_news():
 
     if raw:
         try:
-            root = ET.fromstring(raw)
+            raw_bytes = raw.encode('utf-8') if isinstance(raw, str) else raw
+            root = ET.fromstring(raw_bytes)
             for item in root.findall(".//item"):
                 link = (item.findtext("link") or "").strip()
                 if not link:
@@ -617,11 +620,12 @@ def sync_firebase_realtime_db(articles):
 def send_fcm_notification(article):
     try:
         from firebase_admin import messaging
-        clean_title = article['title'][:250]
-        clean_summary = (article.get('summary') or article.get('category') or 'අලුත් පුවතක්')[:500]
-        body = clean_summary[:180] or clean_title[:180]
+        clean_title = article['title'][:120]
+        clean_summary = (article.get('summary') or article.get('category') or 'අලුත් පුවතක්')[:180]
+        body = clean_summary[:120] or clean_title[:120]
         safe_image = article.get('image_url') or ""
 
+        # Sized safely for FCM 4096-byte limit with 3-byte Sinhala UTF-8 characters
         message = messaging.Message(
             topic=HERA_CONFIG["topic"],
             data={
@@ -631,13 +635,13 @@ def send_fcm_notification(article):
                 "title": clean_title,
                 "article_title": clean_title,
                 "body": body,
-                "category": article.get("category", "දේශීය පුවත්"),
+                "category": article.get("category", "දේශීය පුවත්")[:30],
                 "summary": clean_summary,
-                "content": (article.get("content") or clean_summary)[:1500],
+                "content": (article.get("content") or clean_summary)[:400],
                 "image_url": safe_image,
                 "published_at": article.get("published_at", get_now_sl().strftime("%Y-%m-%d %H:%M:%S")),
-                "source_name": article.get("source_name", "Hera News"),
-                "source_url": str(article.get("source_url") or "")[:500],
+                "source_name": article.get("source_name", "Hera News")[:40],
+                "source_url": str(article.get("source_url") or "")[:200],
             },
             android=messaging.AndroidConfig(
                 priority="high",
