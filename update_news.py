@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Hera News Automation Engine for GitHub Actions & Local Execution
-- Fetches news from 3 trusted Sinhala sources: ITN (API + Sports), Lankadeepa (RSS), Ada Derana (RSS + Page Scraper)
+- Fetches news from trusted Sinhala sources: News 1st (Web Scraper), ITN (API + Sports), Lankadeepa (RSS), Ada Derana (RSS)
+- High-precision Sinhala News Intelligence & Smart Notification Filter
 - Guaranteed https image extraction & full article body extraction
-- True publication timestamp extraction for Ada Derana, Lankadeepa & ITN
+- True publication timestamp extraction
 - Strict chronological sorting (Newest to Oldest)
 - Realtime Database sync (news/items, news/feed, news/meta)
 - Firebase Cloud Messaging (FCM) topic 'news' notification with Hera Keyboard Flutter payload
@@ -20,7 +21,9 @@ import time
 import email.utils
 from datetime import datetime, timezone, timedelta
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import unquote
 import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
 import requests
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -39,7 +42,7 @@ HERA_CONFIG = {
     "retention_hours": 72,
     "max_feed_items": 100,
     "max_json_items": 100,
-    "max_notifications_per_day": 12,
+    "max_notifications_per_day": 15,
     "max_notifications_per_hour": 2,
     "minimum_scan_gap_minutes": 7,
     "high_priority_gap_minutes": 20,
@@ -155,8 +158,8 @@ def is_relevant_foreign_news(text):
     value = str(text or '')
     return bool(re.search(
         r'(ලොව\s*විශාලතම|ලෝකයේ\s*විශාලතම|ගෝලීය|ජාත්‍යන්තර\s*හදිසි|'
-        r'ලෝක\s*කුසලාන|ඔලිම්පික්|සුනාමි|භූමිකම්පා|වසංගත|තෙල්\s*මිල|'
-        r'ජාත්‍යන්තර\s*වෙළඳපොළ|දැවැන්ත\s*සයිබර්|හැක්\s*කිරීම)',
+        r'ලෝක\s*කුසලාන|ඔලිම්පික්|සුනාමි|භූමිකම්පා|වසංගත|තෙල්\s*මිල|බොරතෙල්\s*මිල|'
+        r'ජාත්‍යන්තර\s*වෙළඳපොළ|දැවැන්ත\s*සයිබර්|හැක්\s*කිරීම|යුද්ධය\s*උග්‍ර)',
         value,
         re.I,
     ))
@@ -175,6 +178,15 @@ def is_political_fluff(text):
         r'(පාර්ලිමේන්තුවේ\s*(උණුසුම්|කසුකුසුව|බහින්බස්|ගෝෂා|කෑකෝ|විරෝධතා|ලණු)|'
         r'එකිනෙකාට\s*(චෝදනා|දොස්)|මඩ\s*ප්‍රහාර|දේශපාලන\s*(වාග්\s*සටන්|ඕපාදූප|පොරය|ගොසිප්)|'
         r'මන්ත්‍රීවරු\s*ගහගනී|සභාව\s*කල්\s*තබයි|සභාවේ\s*උණුසුම්|කුණුහරුප|අභියෝග\s*කරයි)',
+        str(text or ''),
+        re.I
+    ))
+
+def is_ceremonial_fluff(text):
+    return bool(re.search(
+        r'(ශ්‍රමදාන|පවිත්‍රතා\s*වැඩසටහන|අත්තම|සමාරම්භක\s*උත්සව|නායකත්ව\s*පුහුණු|'
+        r'සම්මාන\s*ප්‍රදාන|සමරු\s*උත්සව|ශිෂ්‍යත්ව\s*ප්‍රදාන|පැළ\s*සිටුවීමේ|වෘත්තීය\s*පුහුණු|'
+        r'සුව\s*සායන|රුක්\s*රෝපණ|පුස්තකාල\s*සතිය|ප්‍රදර්ශනයක්\s*පැවැත්වේ)',
         str(text or ''),
         re.I
     ))
@@ -207,59 +219,76 @@ def calculate_importance(article):
     score = 30
     reasons = []
 
+    # 1. Foreign penalties / boosts
     if is_foreign_only(text):
         reasons.append("foreign_context")
         score -= 35
         if is_relevant_foreign_news(text):
-            score += 20
+            score += 25
             reasons.append("global_impact")
 
+    # 2. Strict Negative Fluff Penalties (Never alert users on routine junk)
     if is_blocked_fluff(text):
         score -= 60
         reasons.append("blocked_fluff")
 
     if is_political_fluff(text):
-        score -= 40
+        score -= 45
         reasons.append("political_fluff")
 
+    if is_ceremonial_fluff(text):
+        score -= 45
+        reasons.append("ceremonial_fluff")
+
+    # 3. Life Safety & Catastrophic Emergencies (+65)
     if is_emergency_news(text):
-        score += 60
+        score += 65
         reasons.append("life_safety")
 
+    # 4. Breaking News / Flash alerts (+45)
     if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b|flash\s*news)', text, re.I):
         score += 45
         reasons.append("breaking_news")
 
-    if re.search(r'(විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද|ගාස්තු)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*කප්පාදු|ඉන්ධන\s*මිල|ගෑස්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන))', text, re.I):
+    # 5. Weather, Climate Forecasts & Daily Warnings (+42)
+    if re.search(r'(කාලගුණ\s*විද්‍යා|කාලගුණ\s*නිවේදන|කාලගුණ\s*අනාවැකි|තැනින්\s*තැන\s*වැසි|පළාත්\s*රැසකට.*වැසි|ගිගුරුම්\s*සහිත\s*වැසි|තද\s*වැසි|අධික\s*වැසි|මිලිමීටර්\s*\d+|අකුණු\s*අනතුරු|වායු\s*ගුණාත්මක|අධික\s*උෂ්ණත්ව|මුහුදු\s*රළු)', text, re.I):
+        score += 42
+        reasons.append("weather_alert")
+
+    # 6. Citizen Public Notice, Taxes, Essential Prices & Deadlines (+45)
+    if re.search(r'(TIN\b|ටින්\s*අංක|දේශීය\s*ආදායම්|ආදායම්\s*බදු|වැට්\s*බදු|\bVAT\b|අනිවාර්යයි|අවසාන\s*දිනය|සහන\s*කාලය|විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද|ගාස්තු)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*(කප්පාදු|ගාස්තු)|ඉන්ධන\s*මිල|ගෑස්\s*මිල|බේකරි\s*නිෂ්පාදන|පාන්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන|ප්‍රවේශ\s*පත්‍ර))', text, re.I):
+        score += 45
+        reasons.append("citizen_notice")
+
+    # 7. Major Crimes, Big Thefts, Financial Scams & Cyber Attacks (+38)
+    if re.search(r'(මුදල්\s*වංචා|රුපියල්\s*කෝටි|රුපියල්\s*ලක්ෂ|ලක්ෂ\s*ගණනින්|බැංකු\s*ගිණුම්|online\s*වංචා|whatsapp.*වංචා|තෑගි\s*පාර්සල්.*වංචා|රන්\s*භාණ්ඩ\s*කොල්ල|මහා\s*පරිමාණ\s*(මත්ද්‍රව්‍ය|කොල්ල|හොරකම්)|සයිබර්\s*ප්‍රහාර|දැවැන්ත\s*හොරකම|අල්ලස්\s*හෝ\s*දූෂණ|CID\b|TID\b|විශේෂ\s*කාර්ය\s*බලකා|මාරක\s*(රිය|දුම්රිය)\s*අනතුර|ගිනි\s*ගැනීම|නෞකා\s*අනතුර)', text, re.I):
+        score += 38
+        reasons.append("crime_or_scam")
+
+    # 8. National Policy, Cabinet, Central Bank & Court Rulings (+35)
+    # Strict presidential phrasing; never matches minor officials' remarks
+    if re.search(r'(අයවැය|imf|මහ\s*බැංකු\s*(තීරණ|පොලී)|පොලී\s*අනුපාත|උද්ධමනය|ඩොලර|රන්\s*මිල|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ\s*තීන්දුව|අධිකරණ\s*තීන්දුව|ජනාධිපතිවරයාගේ\s*(විශේෂ\s*ප්‍රකාශ|නියෝග|තීරණ)|ජනාධිපති\s*(නියෝග|තීරණ)|අගමැති\s*(නියෝග|තීරණ))', text, re.I):
         score += 35
-        reasons.append("public_service")
+        reasons.append("national_policy")
 
-    if re.search(r'(අයවැය|imf|මහ\s*බැංකු|පොලී\s*අනුපාත|උද්ධමනය|ඩොලර|රන්\s*මිල|කැබිනට්\s*(තීරණ|අනුමැති)|ජනාධිපති.*(තීරණ|නියෝග|ප්‍රකාශ)|අගමැති.*(තීරණ|නියෝග)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ|අධිකරණ\s*තීන්දුව)', text, re.I):
-        score += 32
-        reasons.append("national_impact")
-
-    if re.search(r'(පොලිස්\s*විශේෂ|cid|tid|විශේෂ\s*කාර්ය\s*බලකා|මත්ද්‍රව්‍ය\s*වැටලී|මහා\s*පරිමාණ.*අත්අඩංගුවට|ඝාතන.*විමර්ශන|මාරක\s*(රිය|දුම්රිය)\s*අනතුර|ගිනි\s*ගැනීම|නෞකා\s*අනතුර)', text, re.I):
-        score += 30
-        reasons.append("law_and_order")
-
+    # 9. Sports Deciders, Finals & National Team Milestones (+42)
     is_defeat = bool(re.search(
         r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පැරදෙයි|පැරදුණ|පැරදුන)',
         text,
         re.I
     ))
     is_toss_or_routine = bool(re.search(r'(කාසියේ\s*වාසිය|පුහුණු\s*සැසිය|සංචිතය\s*නම්|ක්‍රීඩකයන්\s*නම්)', text, re.I))
-    sl_match_or_win = has_sri_lanka_context(text) and not is_defeat and not is_toss_or_routine and bool(re.search(
-        r'(අද\s*(පැවැත්වෙන|ක්‍රියාත්මක|තරගය)|අද\s*ශ්‍රී\s*ලංකා|'
-        r'ශ්‍රී\s*ලංකා\s*(කණ්ඩායම|පිල).*(තරගය\s*ජය|ජයග්‍රහණය|මුහුණ\s*දෙයි|සටනට)|'
-        r'ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|'
-        r'තරගාවලිය\s*ජය|විශිෂ්ට\s*ජයක්|'
+    major_sport_event = not is_defeat and not is_toss_or_routine and bool(re.search(
+        r'(අවසන්\s*මහා\s*තරග|තුන්කොන්\s*සටන|අද\s*(පැවැත්වෙන|ක්‍රියාත්මක)\s*තරගය|'
+        r'ශ්‍රී\s*ලංකා\s*-\s*පාකිස්තාන|ශ්‍රී\s*ලංකා\s*-\s*ඉන්දියා|ශ්‍රී\s*ලංකා\s*-\s*ඕස්ට්‍රේලියා|'
+        r'ලෝක\s*කුසලාන|ශූරතාව|ඔලිම්පික්|පදක්කම|තරගාවලිය\s*ජය|විශිෂ්ට\s*ජයක්|'
         r'ශ්‍රී\s*ලංකාව\s*ජය|ශ්‍රී\s*ලංකා\s*කණ්ඩායම\s*ජය)',
         text,
-        re.I,
+        re.I
     ))
-    if sl_match_or_win:
-        score += 35
-        reasons.append("national_team_sport")
+    if major_sport_event:
+        score += 42
+        reasons.append("major_sport_decider")
     elif is_sports_news(title, text):
         if is_defeat:
             score -= 20
@@ -281,15 +310,89 @@ def calculate_importance(article):
     article["importance_reasons"] = reasons
     return article
 
-# ==================== SOURCE 1: ITN NEWS (API + SPORTS + RSS) ====================
+# ==================== SOURCE 1: NEWS 1ST (FASTEST LIVE WEB SCRAPER) ====================
+def parse_newsfirst_datetime(text):
+    m = re.search(r'(\d{1,2})-(\d{1,2})-(\d{4})\s*\|\s*(\d{1,2}):(\d{2})\s*(AM|PM)', text, re.I)
+    if m:
+        day, month, year, hour, minute, ampm = m.groups()
+        dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
+        try:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+            return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000)
+        except Exception:
+            pass
+    now = datetime.now(SL_TIMEZONE)
+    return now.strftime("%Y-%m-%d %H:%M:%S"), int(now.timestamp() * 1000)
+
+def fetch_newsfirst_news():
+    articles = []
+    seen = set()
+    endpoints = [
+        ("https://sinhala.newsfirst.lk/latest-news", "දේශීය පුවත්"),
+        ("https://sinhala.newsfirst.lk/sports", "ක්‍රීඩා පුවත්"),
+        ("https://sinhala.newsfirst.lk/local", "දේශීය පුවත්")
+    ]
+
+    for url, default_cat in endpoints:
+        html_doc = http_get(url, timeout=12)
+        if not html_doc:
+            continue
+        try:
+            soup = BeautifulSoup(html_doc, 'html.parser')
+            links = soup.find_all('a', href=True)
+            for a in links:
+                href = a.get('href', '')
+                if not ('/2026/' in href or '/2025/' in href):
+                    continue
+                full_url = href if href.startswith('http') else f"https://sinhala.newsfirst.lk{href}"
+                slug = unquote(href.strip('/').split('/')[-1])
+                p_id = f"newsfirst_{slug[:40]}"
+                if p_id in seen:
+                    continue
+                seen.add(p_id)
+
+                raw_text = a.get_text(" ", strip=True)
+                pub_str, pub_ms = parse_newsfirst_datetime(raw_text)
+
+                title_part = re.sub(r'^\s*\d{1,2}-\d{1,2}-\d{4}\s*\|\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*', '', raw_text, flags=re.I)
+                title_part = re.sub(r'\s*COLOMBO\s*\(\s*News\s*1st\s*\)\s*-\s*.*$', '', title_part, flags=re.I)
+                title = clean_text(title_part)
+                if not title or len(title) < 6:
+                    title = slug.replace('-', ' ')
+
+                img_tag = a.find('img')
+                img_url = ""
+                if img_tag:
+                    img_url = normalize_image_url(img_tag.get('src') or img_tag.get('data-src') or "")
+
+                articles.append({
+                    "id": p_id,
+                    "title": title,
+                    "category": default_cat,
+                    "summary": title,
+                    "content": title,
+                    "image_url": img_url,
+                    "published_at": pub_str,
+                    "published_at_ms": pub_ms,
+                    "fetched_at_ms": int(time.time() * 1000),
+                    "source_name": "News 1st",
+                    "source_url": full_url,
+                    "is_top_story": False
+                })
+        except Exception as e:
+            print(f"Newsfirst scrape error ({url}): {e}")
+
+    print(f"Loaded {len(articles)} articles from Newsfirst.lk.")
+    return articles
+
+# ==================== SOURCE 2: ITN NEWS (API + SPORTS + RSS) ====================
 def fetch_itn_news():
     articles = []
     seen = set()
 
-    # Per page 30 to keep JSON response fast and light
     urls = [
         "https://www.itnnews.lk/wp-json/wp/v2/posts?_embed&per_page=30",
-        "https://www.itnnews.lk/wp-json/wp/v2/posts?categories=80&_embed=wp:featuredmedia&per_page=6"
+        "https://www.itnnews.lk/wp-json/wp/v2/posts?categories=80&_embed=wp:featuredmedia&per_page=20"
     ]
     for url in urls:
         try:
@@ -324,67 +427,85 @@ def fetch_itn_news():
                     except Exception:
                         pass
 
-                cats = post.get('categories') or []
-                is_sports = (80 in cats) or is_sports_news(title, body)
-                # Exclude sports stories older than 48 hours to preserve priority for breaking national news
-                now_ms_check = int(time.time() * 1000)
-                if is_sports and (now_ms_check - pub_ms > 48 * 3600 * 1000):
-                    continue
+                # Category
+                cat_name = "දේශීය පුවත්"
+                cats = post.get('categories', [])
+                if 80 in cats or is_sports_news(title, body):
+                    cat_name = "ක්‍රීඩා පුවත්"
+                elif 79 in cats:
+                    cat_name = "විදේශීය පුවත්"
 
-                cat_name = "ක්‍රීඩා පුවත්" if is_sports else ("ප්‍රධාන පුවත" if 86 in cats else "දේශීය පුවත්")
-
+                # Guaranteed HTTPS Featured Image
                 image_url = ""
                 try:
-                    media = post.get('_embedded', {}).get('wp:featuredmedia', [])
-                    if media and isinstance(media, list) and 'source_url' in media[0]:
-                        image_url = media[0]['source_url']
+                    embedded = post.get('_embedded', {})
+                    media_list = embedded.get('wp:featuredmedia', [])
+                    if media_list and isinstance(media_list, list) and len(media_list) > 0:
+                        m = media_list[0]
+                        sizes = m.get('media_details', {}).get('sizes', {})
+                        for s_key in ['large', 'medium_large', 'full', 'medium']:
+                            if s_key in sizes and sizes[s_key].get('source_url'):
+                                image_url = sizes[s_key]['source_url']
+                                break
+                        if not image_url:
+                            image_url = m.get('source_url', '')
                 except Exception:
                     pass
 
+                if not image_url and post.get('jetpack_featured_media_url'):
+                    image_url = post['jetpack_featured_media_url']
+
+                if not image_url and body:
+                    m = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', post.get('content', {}).get('rendered', ''), re.I)
+                    if m:
+                        image_url = m.group(1)
+
                 articles.append({
                     "id": p_id,
-                    "title": title[:300],
+                    "title": title,
                     "category": cat_name,
-                    "summary": summary[:800],
-                    "content": body[:12000],
+                    "summary": summary,
+                    "content": body,
                     "image_url": normalize_image_url(image_url),
                     "published_at": datetime.fromtimestamp(pub_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
                     "published_at_ms": pub_ms,
                     "fetched_at_ms": int(time.time() * 1000),
                     "source_name": "ITN News",
-                    "source_url": post.get('link') or f"https://www.itnnews.lk/{post.get('id')}",
-                    "is_top_story": 86 in cats
+                    "source_url": post.get('link', ''),
+                    "is_top_story": False
                 })
         except Exception as e:
-            print(f"ITN API notice: {e}")
+            print(f"ITN API notice ({url}): {e}")
 
     # Fallback to ITN RSS if needed
-    if not articles:
+    if len(articles) < 10:
         try:
-            xml_text = http_get("https://www.itnnews.lk/feed/", timeout=8)
-            if xml_text and "<rss" in xml_text:
-                root = ET.fromstring(xml_text)
+            rss_raw = http_get("https://www.itnnews.lk/feed/", timeout=10)
+            if rss_raw:
+                root = ET.fromstring(rss_raw.encode('utf-8'))
                 for item in root.findall(".//item"):
-                    link = item.findtext("link") or ""
+                    link = (item.findtext("link") or "").strip()
+                    id_m = re.search(r'/(\d+)/?$', link)
+                    p_id = f"itn_{id_m.group(1)}" if id_m else f"itn_{abs(hash(link))}"
+                    if p_id in seen:
+                        continue
+                    seen.add(p_id)
                     title = clean_text(item.findtext("title") or "")
                     if len(title) < 5:
                         continue
                     desc = clean_text(item.findtext("description") or "")
-                    id_match = re.search(r'/(\d+)/?$', link)
-                    p_id = f"itn_{id_match.group(1)}" if id_match else f"itn_{abs(hash(link))}"
-                    cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, desc) else "දේශීය පුවත්"
-                    raw_date = item.findtext("pubDate") or ""
+                    pub_str = item.findtext("pubDate") or ""
                     pub_ms = int(time.time() * 1000)
-                    if raw_date:
+                    if pub_str:
                         try:
-                            dt = email.utils.parsedate_to_datetime(raw_date)
-                            pub_ms = int(dt.timestamp() * 1000)
+                            parsed_date = email.utils.parsedate_to_datetime(pub_str)
+                            pub_ms = int(parsed_date.timestamp() * 1000)
                         except Exception:
                             pass
                     articles.append({
                         "id": p_id,
                         "title": title,
-                        "category": cat_name,
+                        "category": "දේශීය පුවත්",
                         "summary": desc or title,
                         "content": desc or title,
                         "image_url": "",
@@ -392,38 +513,35 @@ def fetch_itn_news():
                         "published_at_ms": pub_ms,
                         "fetched_at_ms": int(time.time() * 1000),
                         "source_name": "ITN News",
-                        "source_url": link
+                        "source_url": link,
+                        "is_top_story": False
                     })
         except Exception as e:
-            print(f"ITN RSS notice: {e}")
+            print(f"ITN RSS fallback notice: {e}")
 
     print(f"Loaded {len(articles)} articles from ITN News.")
     return articles
 
-# ==================== SOURCE 2: LANKADEEPA (RSS) ====================
+# ==================== SOURCE 3: LANKADEEPA (RSS) ====================
 def fetch_lankadeepa_news():
     articles = []
     seen = set()
-    urls = [
+    rss_urls = [
         "https://www.lankadeepa.lk/rss/latest_news/1",
-        "https://www.lankadeepa.lk/rss/news/48"
+        "https://www.lankadeepa.lk/rss/sports/22"
     ]
-    for url in urls:
+    for url in rss_urls:
         try:
-            raw = http_get(url, timeout=8)
-            if not raw or ("<rss" not in raw and "<channel" not in raw):
+            raw = http_get(url, timeout=12)
+            if not raw:
                 continue
-            raw = re.sub(r'^\ufeff', '', raw).strip()
-            end_idx = raw.find('</rss>')
-            if end_idx != -1:
-                raw = raw[:end_idx + 6].strip()
-            root = ET.fromstring(raw)
+            root = ET.fromstring(raw.encode('utf-8'))
             for item in root.findall(".//item"):
                 link = (item.findtext("link") or "").strip()
                 if not link:
                     continue
-                id_match = re.search(r'/(\d+-\d+|\d+)/?$', link)
-                p_id = f"lk_{id_match.group(1).replace('-', '_')}" if id_match else f"lk_{abs(hash(link))}"
+                id_match = re.search(r'/(\d+)/?$', link) or re.search(r'article/(\d+)', link)
+                p_id = f"lk_{id_match.group(1)}" if id_match else f"lk_{abs(hash(link))}"
                 if p_id in seen:
                     continue
                 seen.add(p_id)
@@ -438,26 +556,17 @@ def fetch_lankadeepa_news():
                 if img_match:
                     image_url = img_match.group(1)
 
-                enc = item.find("enclosure")
-                if not image_url and enc is not None:
-                    image_url = enc.get("url") or ""
-
                 clean_desc = clean_text(raw_desc)
-                cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, clean_desc) else "දේශීය පුවත්"
+                cat_name = "ක්‍රීඩා පුවත්" if "sports" in url or is_sports_news(title, clean_desc) else "දේශීය පුවත්"
 
-                # Parse ISO timestamp e.g. 2026-10-30T11:34:00+05:30
-                raw_date = item.findtext("pubDate") or ""
+                pub_str = item.findtext("pubDate") or ""
                 pub_ms = int(time.time() * 1000)
-                if raw_date:
+                if pub_str:
                     try:
-                        dt = datetime.fromisoformat(raw_date)
-                        pub_ms = int(dt.timestamp() * 1000)
+                        parsed_date = email.utils.parsedate_to_datetime(pub_str)
+                        pub_ms = int(parsed_date.timestamp() * 1000)
                     except Exception:
-                        try:
-                            dt = email.utils.parsedate_to_datetime(raw_date)
-                            pub_ms = int(dt.timestamp() * 1000)
-                        except Exception:
-                            pass
+                        pass
 
                 articles.append({
                     "id": p_id,
@@ -478,7 +587,7 @@ def fetch_lankadeepa_news():
     print(f"Loaded {len(articles)} articles from Lankadeepa.")
     return articles
 
-# ==================== SOURCE 3: ADA DERANA (RSS + EXACT TIME & IMAGE SCRAPER) ====================
+# ==================== SOURCE 4: ADA DERANA (RSS + EXACT TIME & IMAGE SCRAPER) ====================
 def fetch_adaderana_news():
     articles = []
     seen = set()
@@ -526,8 +635,6 @@ def fetch_adaderana_news():
                 elif "feature" in raw_cat:
                     cat_name = "විශේෂාංග"
 
-                # Estimate default timestamp based on article numeric ID progression
-                # This ensures newer Ada Derana news IDs strictly sort above older news IDs
                 base_time = int(time.time() * 1000)
                 num_id = int(id_match.group(1)) if id_match else 0
                 estimated_ms = base_time - max(0, (253920 - num_id) * 120000) if num_id > 0 else base_time
@@ -548,51 +655,6 @@ def fetch_adaderana_news():
         except Exception as e:
             print(f"Ada Derana RSS notice: {e}")
 
-    # Robust Fallback: Scrape Ada Derana Homepage HTML if RSS provided fewer than 5 items
-    if len(articles) < 5:
-        try:
-            hp_html = http_get("https://sinhala.adaderana.lk/", timeout=15)
-            if hp_html and "/news/" in hp_html:
-                soup = BeautifulSoup(hp_html, 'html.parser')
-                base_time = int(time.time() * 1000)
-                for a_tag in soup.find_all('a', href=re.compile(r'/news/(\d+)')):
-                    href = a_tag.get('href', '')
-                    full_link = href if href.startswith('http') else f"https://sinhala.adaderana.lk{href}"
-                    id_m = re.search(r'/news/(\d+)', full_link)
-                    p_id = f"ad_{id_m.group(1)}" if id_m else f"ad_{abs(hash(full_link))}"
-                    if p_id in seen:
-                        continue
-                    seen.add(p_id)
-
-                    title = clean_text(a_tag.get_text())
-                    if len(title) < 8 or "කියවන්න" in title or "විස්තර" in title:
-                        continue
-
-                    img_elem = a_tag.find('img')
-                    img_src = ""
-                    if img_elem:
-                        img_src = img_elem.get('src') or img_elem.get('data-src') or ""
-
-                    num_id = int(id_m.group(1)) if id_m else 0
-                    estimated_ms = base_time - max(0, (253960 - num_id) * 120000) if num_id > 0 else base_time
-
-                    cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, "") else "දේශීය පුවත්"
-                    articles.append({
-                        "id": p_id,
-                        "title": title,
-                        "category": cat_name,
-                        "summary": title,
-                        "content": title,
-                        "image_url": normalize_image_url(img_src),
-                        "published_at": datetime.fromtimestamp(estimated_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
-                        "published_at_ms": estimated_ms,
-                        "fetched_at_ms": int(time.time() * 1000),
-                        "source_name": "අද දෙරණ",
-                        "source_url": full_link
-                    })
-        except Exception as e:
-            print(f"Ada Derana HTML fallback notice: {e}")
-
     print(f"Loaded {len(articles)} articles from Ada Derana.")
     return articles
 
@@ -612,13 +674,9 @@ def enrich_article_details(article):
 
         # 1. Image
         if not article.get("image_url"):
-            img_m = re.search(r'<meta[^>]+property=["\'](?:og:image|twitter:image)["\'][^>]+content=["\']([^"\']+)["\']', page_html, re.I)
+            img_m = re.search(r'property=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
             if not img_m:
-                img_m = re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\'](?:og:image|twitter:image)["\']', page_html, re.I)
-            if not img_m:
-                img_m = re.search(r'property=["\'](?:og:image|twitter:image)["\']\s+content=["\']([^"\']+)["\']', page_html, re.I)
-            if not img_m and "media.adaderanasinhala.lk" in page_html:
-                img_m = re.search(r'(https://media\.adaderanasinhala\.lk/articles/\d+/[^"\'\s>]+)', page_html, re.I)
+                img_m = re.search(r'content=["\']([^"\']+)["\']\s+property=["\'](?:og:image|twitter:image)["\']', page_html, re.I)
             if img_m:
                 article["image_url"] = normalize_image_url(img_m.group(1))
 
@@ -631,7 +689,7 @@ def enrich_article_details(article):
                     article["summary"] = cleaned_desc
                     article["content"] = cleaned_desc
 
-        # 3. Exact Published Date for Ada Derana (e.g., "Fri, 30 Oct 2026 - 07:50 AM")
+        # 3. Exact Published Date for Ada Derana
         if article.get("source_name") == "අද දෙරණ":
             date_m = re.search(r'([A-Za-z]{3},\s*\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM))', page_html, re.I)
             if date_m:
@@ -726,9 +784,6 @@ def merge_with_history(fresh_articles, existing_articles, now_ms):
             continue
         if not should_keep_article(article):
             continue
-        # Drop sports stories older than 48 hours so stale matches never clutter the feed
-        if is_sports_news(article.get("title", ""), article.get("summary", "")) and (now_ms - effective_ms > 48 * 3600 * 1000):
-            continue
         recent.append(article)
 
     recent.sort(key=lambda item: int(item.get("published_at_ms") or 0), reverse=True)
@@ -789,7 +844,6 @@ def sync_firebase_realtime_db(articles, source_counts=None):
         from firebase_admin import db
         feed_dict = {}
         items_dict = {}
-        # Ensure articles are strictly ordered newest to oldest
         sorted_articles = sorted(articles, key=lambda x: x.get("published_at_ms", 0), reverse=True)
 
         for art in sorted_articles[:HERA_CONFIG["max_feed_items"]]:
@@ -814,10 +868,7 @@ def sync_firebase_realtime_db(articles, source_counts=None):
             items_dict[a_id] = art
 
         root_ref = db.reference('news')
-        # Overwrite feed with cleanly sorted, fresh items
         root_ref.child('feed').set(feed_dict)
-        # The curated feed is authoritative. Replace items too so stale
-        # Apps Script records cannot remain addressable indefinitely.
         root_ref.child('items').set(items_dict)
         root_ref.child('meta').update({
             "initialized": True,
@@ -843,7 +894,6 @@ def send_fcm_notification(article):
         body = clean_summary[:120] or clean_title[:120]
         safe_image = article.get('image_url') or ""
 
-        # Sized safely for FCM 4096-byte limit with 3-byte Sinhala UTF-8 characters
         message = messaging.Message(
             topic=HERA_CONFIG["topic"],
             data={
@@ -899,17 +949,19 @@ def main():
     has_firebase = False if dry_run else initialize_firebase()
     existing_articles = load_existing_articles()
 
-    # 1. Fetch articles from all 3 independent sources
+    # 1. Fetch articles from all 4 independent sources
+    newsfirst_articles = fetch_newsfirst_news()
     itn_articles = fetch_itn_news()
     lankadeepa_articles = fetch_lankadeepa_news()
     derana_articles = fetch_adaderana_news()
     source_counts = {
+        "newsfirst": len(newsfirst_articles),
         "itn": len(itn_articles),
         "lankadeepa": len(lankadeepa_articles),
         "ada_derana": len(derana_articles),
     }
 
-    combined = itn_articles + lankadeepa_articles + derana_articles
+    combined = newsfirst_articles + itn_articles + lankadeepa_articles + derana_articles
     if not combined:
         raise RuntimeError("All news sources were empty or unreachable.")
 
@@ -925,7 +977,7 @@ def main():
     print("Enriching articles needing images or body in parallel...")
     needs_enrichment_indices = [
         i for i, art in enumerate(unique_articles)
-        if not art.get("image_url") or art.get("source_name") == "අද දෙරණ"
+        if not art.get("image_url") or art.get("source_name") in ("අද දෙරණ", "News 1st") and len(art.get("content", "")) < 40
     ]
     targets = [unique_articles[i] for i in needs_enrichment_indices[:40]]
     if targets:
@@ -934,8 +986,7 @@ def main():
         for idx, enriched in zip(needs_enrichment_indices[:40], enriched_results):
             unique_articles[idx] = enriched
 
-    # 4. Merge the current scan with up to 7 days of history so a short RSS
-    # response cannot shrink the app feed. Re-score after enrichment.
+    # 4. Merge current scan with history and score articles
     fresh_scored = [calculate_importance(art) for art in unique_articles]
     scored_articles = merge_with_history(fresh_scored, existing_articles, now_ms)
     scored_articles = [calculate_importance(art) for art in scored_articles]
@@ -984,11 +1035,8 @@ def main():
         if str(article.get("id")) in recent_keys:
             recent_titles.append(article.get("title", ""))
 
-    # First v3 run establishes a baseline and never floods users with the
-    # existing backlog. Subsequent runs keep retrying unsent important stories
-    # until pacing permits them or they age out.
     initialized = bool(state.get("v3_initialized"))
-    freshness_cutoff_ms = now_ms - 4 * 60 * 60 * 1000  # 4-hour window ensures breaking stories aren't lost between scans
+    freshness_cutoff_ms = now_ms - 2 * 60 * 60 * 1000  # Strict 2-hour window: old news never alerts
     candidates = []
     if initialized:
         candidates = [
