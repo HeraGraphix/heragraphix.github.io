@@ -284,7 +284,7 @@ def calculate_importance(article):
         score += 35
         reasons.append("national_policy")
 
-    # 9. Major Sports Deciders & Coin Toss (+45)
+    # 9. Major Sports Deciders & Finals Toss (+42 to +45)
     is_defeat = bool(re.search(
         r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පැරදෙයි|පැරදුණ|පැරදුන)',
         text,
@@ -292,10 +292,8 @@ def calculate_importance(article):
     ))
     is_routine_practice = bool(re.search(r'(පුහුණු\s*සැසිය|ක්‍රීඩකයන්\s*නම්|සංචිතය\s*නම්)', text, re.I))
 
-    # Match Toss of Finals, Deciders, Sri Lanka matches
-    is_major_toss = bool(re.search(r'(කාසියේ\s*වාසිය|කාසිය\s*වාසිය|කාසියේ\s*වාසි)', text, re.I)) and (
-        has_sri_lanka_context(text) or bool(re.search(r'(අවසන්|තුන්කොන්|පාකිස්තාන|ඉන්දියා|ඕස්ට්‍රේලියා|ලෝක\s*කුසලාන|ශූරතාව)', text, re.I))
-    )
+    # Match Toss of Finals, Deciders, Tri-series, World Cups
+    is_finals_or_decider_toss = bool(re.search(r'(කාසියේ\s*වාසිය|කාසිය\s*වාසිය|කාසියේ\s*වාසි)', text, re.I)) and bool(re.search(r'(අවසන්|තුන්කොන්|ලෝක\s*කුසලාන|ශූරතාව|මහ\s*ගැටුම|final)', text, re.I))
 
     major_sport_event = not is_defeat and not is_routine_practice and bool(re.search(
         r'(අවසන්\s*මහා\s*තරග|අවසන්\s*මහ\s*ගැටුම|තුන්කොන්\s*සටන|අද\s*(පැවැත්වෙන|ක්‍රියාත්මක)\s*තරගය|'
@@ -306,10 +304,12 @@ def calculate_importance(article):
         re.I
     ))
 
-    if is_major_toss:
+    if is_finals_or_decider_toss:
         score += 45
-        reasons.append("major_match_toss")
-    elif major_sport_event:
+        if "foreign_context" in reasons:
+            score += 35  # Neutralize foreign penalty for finals match toss
+        reasons.append("major_sport_decider")
+    elif major_sport_event and not re.search(r'(කාසියේ\s*වාසිය|කාසිය\s*වාසිය)', text, re.I):
         score += 42
         reasons.append("major_sport_decider")
     elif is_sports_news(title, text):
