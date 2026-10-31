@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Hera News Automation Engine for GitHub Actions & Local Execution
-- Fetches news from trusted Sinhala sources: News 1st (Web Scraper), ITN (API + Sports), Lankadeepa (RSS), Ada Derana (RSS)
+- Fetches news from 3 trusted fast digital broadcasters: News 1st, ITN News, Ada Derana
 - High-precision Sinhala News Intelligence & Smart Notification Filter
+- Breaking Match Toss & Sports Deciders detection
 - Guaranteed https image extraction & full article body extraction
-- True publication timestamp extraction
-- Strict chronological sorting (Newest to Oldest)
+- True publication timestamp extraction with strict chronological sorting (Newest to Oldest)
 - Realtime Database sync (news/items, news/feed, news/meta)
 - Firebase Cloud Messaging (FCM) topic 'news' notification with Hera Keyboard Flutter payload
 - Generates news.json for GitHub Pages
@@ -62,7 +62,7 @@ def get_now_sl():
     return datetime.now(SL_TIMEZONE)
 
 def http_get(url, timeout=20):
-    # 1. Primary: curl_cffi with Chrome browser TLS impersonation (bypasses 403 on cloud runners)
+    # 1. Primary: curl_cffi with Chrome browser TLS impersonation
     try:
         from curl_cffi import requests as cffi_requests
         resp = cffi_requests.get(
@@ -72,8 +72,12 @@ def http_get(url, timeout=20):
             verify=True,
             headers={'Accept-Language': 'si,en-US;q=0.9,en;q=0.8'}
         )
-        if resp.status_code == 200 and resp.text:
-            return resp.text
+        if resp.status_code == 200:
+            if resp.content:
+                try:
+                    return resp.content.decode('utf-8')
+                except Exception:
+                    return resp.text
         else:
             print(f"cffi notice: GET {url} status {resp.status_code}")
     except Exception as e:
@@ -82,8 +86,12 @@ def http_get(url, timeout=20):
     # 2. Fallback: Standard requests Session
     try:
         resp = HTTP_SESSION.get(url, timeout=timeout)
-        if resp.status_code == 200 and resp.text:
-            return resp.text
+        if resp.status_code == 200:
+            if resp.content:
+                try:
+                    return resp.content.decode('utf-8')
+                except Exception:
+                    return resp.text
     except Exception:
         pass
 
@@ -193,6 +201,12 @@ def is_ceremonial_fluff(text):
 
 def should_keep_article(article):
     text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
+    # Lankadeepa completely purged
+    if article.get('source_name') == 'ලංකාදීප' or str(article.get('id', '')).startswith('lk_'):
+        return False
+    # Reject corrupted/mojibake text
+    if any(m in text for m in ('à·', 'à¶', 'à¸', 'à¹', 'â€™')):
+        return False
     if is_blocked_fluff(text):
         return False
     if is_foreign_only(text):
@@ -203,7 +217,7 @@ def should_keep_article(article):
 def is_sports_news(title, text):
     combined = f"{title} {text}".lower()
     return bool(re.search(
-        r'(ක්‍රිකට්|පාපන්දු|ක්‍රීඩා|තරගාවලිය|තරඟාවලිය|ශූරතාව|ඔලිම්පික්|පැරා\s*ක්‍රීඩා|විකට්|ලකුණු|පිතිකර|පන්දු\s*යැව|අවසන්\s*මහා\s*තරග|ටෙස්ට්\s*තරග|එක්දින|විස්සයි20|t20|odi|ipl|lpl|icc|fifa|world\s*cup|තරගය\s*ජය|ජයග්‍රහණය\s*කරයි|පදක්කම|පදක්කම්|ශ්‍රී\s*ලංකා\s*කණ්ඩායම|ක්‍රීඩක)',
+        r'(ක්‍රිකට්|පාපන්දු|ක්‍රීඩා|තරගාවලිය|තරඟාවලිය|ශූරතාව|ඔලිම්පික්|පැරා\s*ක්‍රීඩා|විකට්|ලකුණු|පිතිකර|පන්දු\s*යැව|අවසන්\s*මහා\s*තරග|ටෙස්ට්\s*තරග|එක්දින|විස්සයි20|t20|odi|ipl|lpl|icc|fifa|world\s*cup|තරගය\s*ජය|ජයග්‍රහණය\s*කරයි|පදක්කම|පදක්කම්|ශ්‍රී\s*ලංකා\s*කණ්ඩායම|ක්‍රීඩක|කාසියේ\s*වාසිය|කාසිය\s*වාසිය)',
         combined
     ))
 
@@ -266,27 +280,36 @@ def calculate_importance(article):
         reasons.append("crime_or_scam")
 
     # 8. National Policy, Cabinet, Central Bank & Court Rulings (+35)
-    # Strict presidential phrasing; never matches minor officials' remarks
     if re.search(r'(අයවැය|imf|මහ\s*බැංකු\s*(තීරණ|පොලී)|පොලී\s*අනුපාත|උද්ධමනය|ඩොලර|රන්\s*මිල|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ\s*තීන්දුව|අධිකරණ\s*තීන්දුව|ජනාධිපතිවරයාගේ\s*(විශේෂ\s*ප්‍රකාශ|නියෝග|තීරණ)|ජනාධිපති\s*(නියෝග|තීරණ)|අගමැති\s*(නියෝග|තීරණ))', text, re.I):
         score += 35
         reasons.append("national_policy")
 
-    # 9. Sports Deciders, Finals & National Team Milestones (+42)
+    # 9. Major Sports Deciders & Coin Toss (+45)
     is_defeat = bool(re.search(
         r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පැරදෙයි|පැරදුණ|පැරදුන)',
         text,
         re.I
     ))
-    is_toss_or_routine = bool(re.search(r'(කාසියේ\s*වාසිය|පුහුණු\s*සැසිය|සංචිතය\s*නම්|ක්‍රීඩකයන්\s*නම්)', text, re.I))
-    major_sport_event = not is_defeat and not is_toss_or_routine and bool(re.search(
-        r'(අවසන්\s*මහා\s*තරග|තුන්කොන්\s*සටන|අද\s*(පැවැත්වෙන|ක්‍රියාත්මක)\s*තරගය|'
+    is_routine_practice = bool(re.search(r'(පුහුණු\s*සැසිය|ක්‍රීඩකයන්\s*නම්|සංචිතය\s*නම්)', text, re.I))
+
+    # Match Toss of Finals, Deciders, Sri Lanka matches
+    is_major_toss = bool(re.search(r'(කාසියේ\s*වාසිය|කාසිය\s*වාසිය|කාසියේ\s*වාසි)', text, re.I)) and (
+        has_sri_lanka_context(text) or bool(re.search(r'(අවසන්|තුන්කොන්|පාකිස්තාන|ඉන්දියා|ඕස්ට්‍රේලියා|ලෝක\s*කුසලාන|ශූරතාව)', text, re.I))
+    )
+
+    major_sport_event = not is_defeat and not is_routine_practice and bool(re.search(
+        r'(අවසන්\s*මහා\s*තරග|අවසන්\s*මහ\s*ගැටුම|තුන්කොන්\s*සටන|අද\s*(පැවැත්වෙන|ක්‍රියාත්මක)\s*තරගය|'
         r'ශ්‍රී\s*ලංකා\s*-\s*පාකිස්තාන|ශ්‍රී\s*ලංකා\s*-\s*ඉන්දියා|ශ්‍රී\s*ලංකා\s*-\s*ඕස්ට්‍රේලියා|'
         r'ලෝක\s*කුසලාන|ශූරතාව|ඔලිම්පික්|පදක්කම|තරගාවලිය\s*ජය|විශිෂ්ට\s*ජයක්|'
         r'ශ්‍රී\s*ලංකාව\s*ජය|ශ්‍රී\s*ලංකා\s*කණ්ඩායම\s*ජය)',
         text,
         re.I
     ))
-    if major_sport_event:
+
+    if is_major_toss:
+        score += 45
+        reasons.append("major_match_toss")
+    elif major_sport_event:
         score += 42
         reasons.append("major_sport_decider")
     elif is_sports_news(title, text):
@@ -417,7 +440,6 @@ def fetch_itn_news():
                 summary = excerpt or content or title
                 body = content or summary or title
 
-                # Exact timestamp
                 date_gmt = post.get('date_gmt') or ""
                 pub_ms = int(time.time() * 1000)
                 if date_gmt:
@@ -427,7 +449,6 @@ def fetch_itn_news():
                     except Exception:
                         pass
 
-                # Category
                 cat_name = "දේශීය පුවත්"
                 cats = post.get('categories', [])
                 if 80 in cats or is_sports_news(title, body):
@@ -435,7 +456,6 @@ def fetch_itn_news():
                 elif 79 in cats:
                     cat_name = "විදේශීය පුවත්"
 
-                # Guaranteed HTTPS Featured Image
                 image_url = ""
                 try:
                     embedded = post.get('_embedded', {})
@@ -477,7 +497,7 @@ def fetch_itn_news():
         except Exception as e:
             print(f"ITN API notice ({url}): {e}")
 
-    # Fallback to ITN RSS if needed
+    # Fallback to ITN RSS
     if len(articles) < 10:
         try:
             rss_raw = http_get("https://www.itnnews.lk/feed/", timeout=10)
@@ -522,72 +542,7 @@ def fetch_itn_news():
     print(f"Loaded {len(articles)} articles from ITN News.")
     return articles
 
-# ==================== SOURCE 3: LANKADEEPA (RSS) ====================
-def fetch_lankadeepa_news():
-    articles = []
-    seen = set()
-    rss_urls = [
-        "https://www.lankadeepa.lk/rss/latest_news/1",
-        "https://www.lankadeepa.lk/rss/sports/22"
-    ]
-    for url in rss_urls:
-        try:
-            raw = http_get(url, timeout=12)
-            if not raw:
-                continue
-            root = ET.fromstring(raw.encode('utf-8'))
-            for item in root.findall(".//item"):
-                link = (item.findtext("link") or "").strip()
-                if not link:
-                    continue
-                id_match = re.search(r'/(\d+)/?$', link) or re.search(r'article/(\d+)', link)
-                p_id = f"lk_{id_match.group(1)}" if id_match else f"lk_{abs(hash(link))}"
-                if p_id in seen:
-                    continue
-                seen.add(p_id)
-
-                title = clean_text(item.findtext("title") or "")
-                if len(title) < 5:
-                    continue
-
-                raw_desc = item.findtext("description") or ""
-                image_url = ""
-                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw_desc, re.I)
-                if img_match:
-                    image_url = img_match.group(1)
-
-                clean_desc = clean_text(raw_desc)
-                cat_name = "ක්‍රීඩා පුවත්" if "sports" in url or is_sports_news(title, clean_desc) else "දේශීය පුවත්"
-
-                pub_str = item.findtext("pubDate") or ""
-                pub_ms = int(time.time() * 1000)
-                if pub_str:
-                    try:
-                        parsed_date = email.utils.parsedate_to_datetime(pub_str)
-                        pub_ms = int(parsed_date.timestamp() * 1000)
-                    except Exception:
-                        pass
-
-                articles.append({
-                    "id": p_id,
-                    "title": title,
-                    "category": cat_name,
-                    "summary": clean_desc or title,
-                    "content": clean_desc or title,
-                    "image_url": normalize_image_url(image_url),
-                    "published_at": datetime.fromtimestamp(pub_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
-                    "published_at_ms": pub_ms,
-                    "fetched_at_ms": int(time.time() * 1000),
-                    "source_name": "ලංකාදීප",
-                    "source_url": link
-                })
-        except Exception as e:
-            print(f"Lankadeepa notice ({url}): {e}")
-
-    print(f"Loaded {len(articles)} articles from Lankadeepa.")
-    return articles
-
-# ==================== SOURCE 4: ADA DERANA (RSS + EXACT TIME & IMAGE SCRAPER) ====================
+# ==================== SOURCE 3: ADA DERANA (RAPID DIGITAL NEWS) ====================
 def fetch_adaderana_news():
     articles = []
     seen = set()
@@ -740,7 +695,7 @@ def load_existing_articles():
             value = json.load(handle)
         if not isinstance(value, list):
             return []
-        return [item for item in value if isinstance(item, dict)]
+        return [item for item in value if isinstance(item, dict) and should_keep_article(item)]
     except Exception as error:
         print(f"Warning: Could not load existing {NEWS_JSON_FILE}: {error}")
         return []
@@ -748,6 +703,8 @@ def load_existing_articles():
 def merge_with_history(fresh_articles, existing_articles, now_ms):
     by_id = {}
     for article in existing_articles:
+        if not should_keep_article(article):
+            continue
         article_id = str(article.get("id") or "").strip()
         if not article_id:
             continue
@@ -761,6 +718,8 @@ def merge_with_history(fresh_articles, existing_articles, now_ms):
         by_id[article_id] = saved
 
     for article in fresh_articles:
+        if not should_keep_article(article):
+            continue
         article_id = str(article.get("id") or "").strip()
         if not article_id:
             continue
@@ -775,17 +734,20 @@ def merge_with_history(fresh_articles, existing_articles, now_ms):
         by_id[article_id] = current
 
     cutoff_ms = now_ms - HERA_CONFIG["retention_hours"] * 60 * 60 * 1000
-    future_limit_ms = now_ms + 6 * 60 * 60 * 1000
+    future_limit_ms = now_ms + 10 * 60 * 1000  # Cap future clocks to +10 mins max
     recent = []
     for article in by_id.values():
         published_ms = int(article.get("published_at_ms") or 0)
         effective_ms = published_ms or int(article.get("first_seen_ms") or 0)
-        if effective_ms < cutoff_ms or effective_ms > future_limit_ms:
+        if effective_ms < cutoff_ms or effective_ms > (now_ms + 6 * 60 * 60 * 1000):
             continue
+        if published_ms > future_limit_ms:
+            article["published_at_ms"] = now_ms
         if not should_keep_article(article):
             continue
         recent.append(article)
 
+    # Strict Chronological Sorting: Newest First!
     recent.sort(key=lambda item: int(item.get("published_at_ms") or 0), reverse=True)
     return deduplicate_articles(recent)[:HERA_CONFIG["max_feed_items"]]
 
@@ -844,7 +806,8 @@ def sync_firebase_realtime_db(articles, source_counts=None):
         from firebase_admin import db
         feed_dict = {}
         items_dict = {}
-        sorted_articles = sorted(articles, key=lambda x: x.get("published_at_ms", 0), reverse=True)
+        # Strict Chronological Order (Newest First)
+        sorted_articles = sorted(articles, key=lambda x: int(x.get("published_at_ms") or 0), reverse=True)
 
         for art in sorted_articles[:HERA_CONFIG["max_feed_items"]]:
             a_id = str(art["id"])
@@ -856,9 +819,9 @@ def sync_firebase_realtime_db(articles, source_counts=None):
                 "content": art.get("content", ""),
                 "image_url": art.get("image_url", ""),
                 "published_at": art.get("published_at", ""),
-                "published_at_ms": art.get("published_at_ms", 0),
-                "fetched_at_ms": art.get("fetched_at_ms", 0),
-                "first_seen_ms": art.get("first_seen_ms", 0),
+                "published_at_ms": int(art.get("published_at_ms") or 0),
+                "fetched_at_ms": int(art.get("fetched_at_ms") or 0),
+                "first_seen_ms": int(art.get("first_seen_ms") or 0),
                 "source_name": art.get("source_name", "Hera News"),
                 "source_url": art.get("source_url", ""),
                 "is_top_story": art.get("is_top_story", False),
@@ -882,7 +845,7 @@ def sync_firebase_realtime_db(articles, source_counts=None):
             "last_scan_status": "success",
             "source_counts": source_counts or {},
         })
-        print(f"✅ Firebase Realtime Database updated with {len(feed_dict)} clean feed items (Newest to Oldest)!")
+        print(f"✅ Firebase Realtime Database updated with {len(feed_dict)} clean feed items (Strict Newest First)!")
     except Exception as e:
         print(f"Warning: Firebase DB sync error: {e}")
 
@@ -949,23 +912,21 @@ def main():
     has_firebase = False if dry_run else initialize_firebase()
     existing_articles = load_existing_articles()
 
-    # 1. Fetch articles from all 4 independent sources
+    # 1. Fetch articles from 3 fast digital broadcasters (Lankadeepa permanently removed)
     newsfirst_articles = fetch_newsfirst_news()
     itn_articles = fetch_itn_news()
-    lankadeepa_articles = fetch_lankadeepa_news()
     derana_articles = fetch_adaderana_news()
     source_counts = {
         "newsfirst": len(newsfirst_articles),
         "itn": len(itn_articles),
-        "lankadeepa": len(lankadeepa_articles),
         "ada_derana": len(derana_articles),
     }
 
-    combined = newsfirst_articles + itn_articles + lankadeepa_articles + derana_articles
+    combined = newsfirst_articles + itn_articles + derana_articles
     if not combined:
         raise RuntimeError("All news sources were empty or unreachable.")
 
-    # 2. Remove obvious junk/irrelevant foreign stories, then deduplicate.
+    # 2. Filter obvious junk/fluff/corrupted text, then deduplicate
     eligible_articles = [article for article in combined if should_keep_article(article)]
     unique_articles = deduplicate_articles(eligible_articles)
     print(
@@ -986,10 +947,12 @@ def main():
         for idx, enriched in zip(needs_enrichment_indices[:40], enriched_results):
             unique_articles[idx] = enriched
 
-    # 4. Merge current scan with history and score articles
+    # 4. Merge current scan with history, prune stale items & strictly sort newest-first
     fresh_scored = [calculate_importance(art) for art in unique_articles]
     scored_articles = merge_with_history(fresh_scored, existing_articles, now_ms)
     scored_articles = [calculate_importance(art) for art in scored_articles]
+    
+    # Strict Chronological Sort: Newest to Oldest!
     scored_articles.sort(
         key=lambda item: int(item.get("published_at_ms") or 0),
         reverse=True,
@@ -1009,7 +972,7 @@ def main():
         try:
             with open(NEWS_JSON_FILE, "w", encoding="utf-8") as f:
                 json.dump(json_list, f, ensure_ascii=False, indent=2)
-            print(f"✅ Saved {len(json_list)} fresh articles to {NEWS_JSON_FILE} (Sorted Newest First).")
+            print(f"✅ Saved {len(json_list)} fresh articles to {NEWS_JSON_FILE} (Strict Newest First).")
         except Exception as e:
             print(f"Warning: Could not write {NEWS_JSON_FILE}: {e}")
 
