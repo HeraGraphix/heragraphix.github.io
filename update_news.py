@@ -36,16 +36,16 @@ HERA_CONFIG = {
     "project_id": "hera-keyboard",
     "database_url": "https://hera-keyboard-default-rtdb.firebaseio.com",
     "topic": "news",
-    "retention_hours": 168,
+    "retention_hours": 72,
     "max_feed_items": 100,
     "max_json_items": 100,
     "max_notifications_per_day": 12,
-    "max_notifications_per_hour": 1,
+    "max_notifications_per_hour": 2,
     "minimum_scan_gap_minutes": 7,
-    "high_priority_gap_minutes": 30,
+    "high_priority_gap_minutes": 20,
     "urgent_gap_minutes": 3,
-    "high_priority_threshold": 72,
-    "urgent_threshold": 88
+    "high_priority_threshold": 55,
+    "urgent_threshold": 80
 }
 
 HTTP_SESSION = requests.Session()
@@ -170,6 +170,15 @@ def is_blocked_fluff(text):
         re.I,
     ))
 
+def is_political_fluff(text):
+    return bool(re.search(
+        r'(පාර්ලිමේන්තුවේ\s*(උණුසුම්|කසුකුසුව|බහින්බස්|ගෝෂා|කෑකෝ|විරෝධතා|ලණු)|'
+        r'එකිනෙකාට\s*(චෝදනා|දොස්)|මඩ\s*ප්‍රහාර|දේශපාලන\s*(වාග්\s*සටන්|ඕපාදූප|පොරය|ගොසිප්)|'
+        r'මන්ත්‍රීවරු\s*ගහගනී|සභාව\s*කල්\s*තබයි|සභාවේ\s*උණුසුම්|කුණුහරුප|අභියෝග\s*කරයි)',
+        str(text or ''),
+        re.I
+    ))
+
 def should_keep_article(article):
     text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
     if is_blocked_fluff(text):
@@ -195,7 +204,7 @@ def is_emergency_news(text):
 def calculate_importance(article):
     text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
     title = article.get('title', '')
-    score = 25
+    score = 30
     reasons = []
 
     if is_foreign_only(text):
@@ -205,44 +214,58 @@ def calculate_importance(article):
             score += 20
             reasons.append("global_impact")
 
+    if is_blocked_fluff(text):
+        score -= 60
+        reasons.append("blocked_fluff")
+
+    if is_political_fluff(text):
+        score -= 40
+        reasons.append("political_fluff")
+
     if is_emergency_news(text):
-        score += 70
+        score += 60
         reasons.append("life_safety")
 
-    if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b)', text, re.I):
-        score += 50
+    if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b|flash\s*news)', text, re.I):
+        score += 45
         reasons.append("breaking_news")
 
-    if re.search(r'(විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*කප්පාදු|ඉන්ධන\s*මිල|ගෑස්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන))', text, re.I):
-        score += 50
+    if re.search(r'(විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද|ගාස්තු)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*කප්පාදු|ඉන්ධන\s*මිල|ගෑස්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන))', text, re.I):
+        score += 35
         reasons.append("public_service")
 
-    if re.search(r'(අයවැය|imf|මහ\s*බැංකු|පොලී\s*අනුපාත|උද්ධමනය|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ|අධිකරණ\s*තීන්දුව)', text, re.I):
-        score += 47
+    if re.search(r'(අයවැය|imf|මහ\s*බැංකු|පොලී\s*අනුපාත|උද්ධමනය|ඩොලර|රන්\s*මිල|කැබිනට්\s*(තීරණ|අනුමැති)|ජනාධිපති.*(තීරණ|නියෝග|ප්‍රකාශ)|අගමැති.*(තීරණ|නියෝග)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ|අධිකරණ\s*තීන්දුව)', text, re.I):
+        score += 32
         reasons.append("national_impact")
 
+    if re.search(r'(පොලිස්\s*විශේෂ|cid|tid|විශේෂ\s*කාර්ය\s*බලකා|මත්ද්‍රව්‍ය\s*වැටලී|මහා\s*පරිමාණ.*අත්අඩංගුවට|ඝාතන.*විමර්ශන|මාරක\s*(රිය|දුම්රිය)\s*අනතුර|ගිනි\s*ගැනීම|නෞකා\s*අනතුර)', text, re.I):
+        score += 30
+        reasons.append("law_and_order")
+
     is_defeat = bool(re.search(
-        r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පරාජය\s*කරයි|පරාජය\s*කරමින්|පැරදෙයි|පැරදුණ|පැරදුන)',
+        r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පැරදෙයි|පැරදුණ|පැරදුන)',
         text,
         re.I
     ))
-    major_sport = has_sri_lanka_context(text) and not is_defeat and bool(re.search(
-        r'(ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|'
+    is_toss_or_routine = bool(re.search(r'(කාසියේ\s*වාසිය|පුහුණු\s*සැසිය|සංචිතය\s*නම්|ක්‍රීඩකයන්\s*නම්)', text, re.I))
+    sl_match_or_win = has_sri_lanka_context(text) and not is_defeat and not is_toss_or_routine and bool(re.search(
+        r'(අද\s*(පැවැත්වෙන|ක්‍රියාත්මක|තරගය)|අද\s*ශ්‍රී\s*ලංකා|'
+        r'ශ්‍රී\s*ලංකා\s*(කණ්ඩායම|පිල).*(තරගය\s*ජය|ජයග්‍රහණය|මුහුණ\s*දෙයි|සටනට)|'
+        r'ලෝක\s*කුසලාන|අවසන්\s*මහා\s*තරග|ශූරතාව|ඔලිම්පික්|පදක්කම|'
         r'තරගාවලිය\s*ජය|විශිෂ්ට\s*ජයක්|'
         r'ශ්‍රී\s*ලංකාව\s*ජය|ශ්‍රී\s*ලංකා\s*කණ්ඩායම\s*ජය)',
         text,
         re.I,
     ))
-    if major_sport:
-        score += 50
-        reasons.append("major_sport")
+    if sl_match_or_win:
+        score += 35
+        reasons.append("national_team_sport")
     elif is_sports_news(title, text):
-        score += 24
+        if is_defeat:
+            score -= 20
+        else:
+            score += 15
         reasons.append("sports_news")
-
-    if is_blocked_fluff(text):
-        score -= 60
-        reasons.append("blocked_fluff")
 
     score = max(0, min(100, score))
     tier = "feed_only"
@@ -524,6 +547,51 @@ def fetch_adaderana_news():
                 })
         except Exception as e:
             print(f"Ada Derana RSS notice: {e}")
+
+    # Robust Fallback: Scrape Ada Derana Homepage HTML if RSS provided fewer than 5 items
+    if len(articles) < 5:
+        try:
+            hp_html = http_get("https://sinhala.adaderana.lk/", timeout=15)
+            if hp_html and "/news/" in hp_html:
+                soup = BeautifulSoup(hp_html, 'html.parser')
+                base_time = int(time.time() * 1000)
+                for a_tag in soup.find_all('a', href=re.compile(r'/news/(\d+)')):
+                    href = a_tag.get('href', '')
+                    full_link = href if href.startswith('http') else f"https://sinhala.adaderana.lk{href}"
+                    id_m = re.search(r'/news/(\d+)', full_link)
+                    p_id = f"ad_{id_m.group(1)}" if id_m else f"ad_{abs(hash(full_link))}"
+                    if p_id in seen:
+                        continue
+                    seen.add(p_id)
+
+                    title = clean_text(a_tag.get_text())
+                    if len(title) < 8 or "කියවන්න" in title or "විස්තර" in title:
+                        continue
+
+                    img_elem = a_tag.find('img')
+                    img_src = ""
+                    if img_elem:
+                        img_src = img_elem.get('src') or img_elem.get('data-src') or ""
+
+                    num_id = int(id_m.group(1)) if id_m else 0
+                    estimated_ms = base_time - max(0, (253960 - num_id) * 120000) if num_id > 0 else base_time
+
+                    cat_name = "ක්‍රීඩා පුවත්" if is_sports_news(title, "") else "දේශීය පුවත්"
+                    articles.append({
+                        "id": p_id,
+                        "title": title,
+                        "category": cat_name,
+                        "summary": title,
+                        "content": title,
+                        "image_url": normalize_image_url(img_src),
+                        "published_at": datetime.fromtimestamp(estimated_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
+                        "published_at_ms": estimated_ms,
+                        "fetched_at_ms": int(time.time() * 1000),
+                        "source_name": "අද දෙරණ",
+                        "source_url": full_link
+                    })
+        except Exception as e:
+            print(f"Ada Derana HTML fallback notice: {e}")
 
     print(f"Loaded {len(articles)} articles from Ada Derana.")
     return articles
@@ -920,7 +988,7 @@ def main():
     # existing backlog. Subsequent runs keep retrying unsent important stories
     # until pacing permits them or they age out.
     initialized = bool(state.get("v3_initialized"))
-    freshness_cutoff_ms = now_ms - 2 * 60 * 60 * 1000  # Strict 2-hour window: old news never alerts
+    freshness_cutoff_ms = now_ms - 4 * 60 * 60 * 1000  # 4-hour window ensures breaking stories aren't lost between scans
     candidates = []
     if initialized:
         candidates = [
