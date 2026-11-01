@@ -334,7 +334,7 @@ def calculate_importance(article):
     return article
 
 # ==================== SOURCE 1: NEWS 1ST (FASTEST LIVE WEB SCRAPER) ====================
-def parse_newsfirst_datetime(text):
+def parse_newsfirst_datetime(text, href=""):
     m = re.search(r'(\d{1,2})-(\d{1,2})-(\d{4})\s*\|\s*(\d{1,2}):(\d{2})\s*(AM|PM)', text, re.I)
     if m:
         day, month, year, hour, minute, ampm = m.groups()
@@ -344,6 +344,23 @@ def parse_newsfirst_datetime(text):
             return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000)
         except Exception:
             pass
+
+    # Extract date from URL path: e.g. /2026/10/29/
+    url_m = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', href or "")
+    if url_m:
+        year, month, day = url_m.groups()
+        try:
+            time_m = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)', text, re.I)
+            if time_m:
+                hour, minute, ampm = time_m.groups()
+                dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
+                dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+            else:
+                dt = datetime(int(year), int(month), int(day), 8, 0, 0, tzinfo=SL_TIMEZONE)
+            return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000)
+        except Exception:
+            pass
+
     now = datetime.now(SL_TIMEZONE)
     return now.strftime("%Y-%m-%d %H:%M:%S"), int(now.timestamp() * 1000)
 
@@ -375,7 +392,7 @@ def fetch_newsfirst_news():
                 seen.add(p_id)
 
                 raw_text = a.get_text(" ", strip=True)
-                pub_str, pub_ms = parse_newsfirst_datetime(raw_text)
+                pub_str, pub_ms = parse_newsfirst_datetime(raw_text, href)
 
                 title_part = re.sub(r'^\s*\d{1,2}-\d{1,2}-\d{4}\s*\|\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*', '', raw_text, flags=re.I)
                 title_part = re.sub(r'\s*COLOMBO\s*\(\s*News\s*1st\s*\)\s*-\s*.*$', '', title_part, flags=re.I)
@@ -656,6 +673,19 @@ def enrich_article_details(article):
                     article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
                 except Exception:
                     pass
+
+        # 4. Exact Published Date for News 1st
+        if article.get("source_name") == "News 1st":
+            date_m = re.search(r'(\d{1,2})-(\d{1,2})-(\d{4})[^\d\n\r]{0,30}(\d{1,2}):(\d{2})\s*(AM|PM)', page_html, re.I)
+            if date_m:
+                day, month, year, hour, minute, ampm = date_m.groups()
+                dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
+                try:
+                    dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+                    article["published_at_ms"] = int(dt.timestamp() * 1000)
+                    article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    pass
     except Exception:
         pass
 
@@ -737,6 +767,20 @@ def merge_with_history(fresh_articles, existing_articles, now_ms):
     future_limit_ms = now_ms + 10 * 60 * 1000  # Cap future clocks to +10 mins max
     recent = []
     for article in by_id.values():
+        # Validate if article URL has explicit /YYYY/MM/DD/ that is older than published_at
+        url_m = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', article.get('source_url', ''))
+        if url_m:
+            year, month, day = url_m.groups()
+            url_date_str = f"{year}-{month}-{day}"
+            pub_date_str = (article.get('published_at') or "")[:10]
+            if pub_date_str > url_date_str:
+                try:
+                    dt = datetime(int(year), int(month), int(day), 8, 0, 0, tzinfo=SL_TIMEZONE)
+                    article["published_at_ms"] = int(dt.timestamp() * 1000)
+                    article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    pass
+
         published_ms = int(article.get("published_at_ms") or 0)
         effective_ms = published_ms or int(article.get("first_seen_ms") or 0)
         if effective_ms < cutoff_ms or effective_ms > (now_ms + 6 * 60 * 60 * 1000):
