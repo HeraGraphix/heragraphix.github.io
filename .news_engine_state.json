@@ -1,9 +1,9 @@
 {
   "budget_day": "2026-11-02",
-  "daily_count": 15,
+  "daily_count": 16,
   "budget_hour": "2026-11-02-20",
-  "hourly_count": 0,
-  "last_notification_ms": 1793619927082,
+  "hourly_count": 1,
+  "last_notification_ms": 1793630729234,
   "recent_notified_keys": [
     "lk_48_567555",
     "lk_1_700021",
@@ -56,7 +56,8 @@
     "itn_844196",
     "itn_844263",
     "itn_844260",
-    "itn_844280"
+    "itn_844280",
+    "itn_844316"
   ],
   "v3_initialized": true,
   "recent_notified_titles": [
@@ -209,9 +210,9 @@
     "\u0d85\u0dbb\u0dab\u0dcf\u0dba\u0d9a \u0da2\u0db1\u0dad\u0dcf\u0dc0\u0da7 \u0db1\u0dc0 \u0d89\u0da9\u0db8\u0dca \u0dc3\u0dc4 \u0db1\u0dd2\u0dc0\u0dcf\u0dc3 \u0d86\u0db0\u0dcf\u0dbb \u0da0\u0dd9\u0d9a\u0dca\u0db4\u0dad\u0dca \u0db4\u0dd2\u0dbb\u0dd2\u0db1\u0dd0\u0db8\u0dda",
     "\u0db8\u0dda \u0db8\u0dcf\u0dc3\u0dba\u0da7 \u0d85\u0daf\u0dcf\u0dc5\u0dc0 \u0d9c\u0dd1\u0dc3\u0dca \u0db8\u0dd2\u0dbd\u0dd9\u0dc4\u0dd2 \u0dc0\u0dd9\u0db1\u0dc3\u0d9a\u0dca \u0db1\u0dd1",
     "\u0db0\u0dd3\u0dc0\u0dbb \u0dc3\u0dc4 \u0db1\u0dcf\u0dc0\u0dd2\u0d9a \u0db4\u0dca\u200d\u0dbb\u0da2\u0dcf\u0dc0\u0da7 \u0daf\u0dd0\u0db1\u0dd4\u0db8\u0dca\u0daf\u0dd3\u0db8\u0d9a\u0dca",
-    "\u0db4\u0dc5\u0dcf\u0dad\u0dca \u0dbb\u0dd0\u0dc3\u0d9a\u0da7 \u0db4\u0dc3\u0dca\u0dc0\u0dbb\u0dd4 1.00 \u0db1\u0dca \u0db4\u0dc3\u0dd4 \u0dc0\u0dd0\u0dc3\u0dd2"
+    "\u0d9a\u0db1\u0dca\u0dad\u0dbd\u0dda \u0d85\u0d9a\u0dca\u0d9a\u0dbb 22,000\u0d9a \u0db8\u0dc4 \u0d9a\u0db1\u0dca\u0db1\u0dba\u0dda \u0dc0\u0d9c\u0dcf \u0d9a\u0da7\u0dba\u0dd4\u0dad\u0dd4 \u0d87\u0dbb\u0db9\u0dd9\u0dba\u0dd2"
   ],
-  "last_successful_scan_ms": 1793629845415,
+  "last_successful_scan_ms": 1793630729234,
   "last_source_counts": {
     "newsfirst": 20,
     "itn": 48,
