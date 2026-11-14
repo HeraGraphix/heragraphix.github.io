@@ -1,7 +1,7 @@
 {
   "budget_day": "2026-11-14",
   "daily_count": 6,
-  "budget_hour": "2026-11-14-13",
+  "budget_hour": "2026-11-14-14",
   "hourly_count": 0,
   "last_notification_ms": 1794635131030,
   "recent_notified_keys": [
@@ -309,7 +309,7 @@
     "\u0dc0\u0dd0\u0dc3\u0dd2 \u0dad\u0dad\u0dca\u0dad\u0dca\u0dc0\u0dba\u0dda \u0dad\u0dcf\u0dc0\u0d9a\u0dcf\u0dbd\u0dd2\u0d9a \u0d85\u0da9\u0dd4\u0dc0\u0dd3\u0db8\u0d9a\u0dca",
     "\u0dc0\u0dd2\u0d9a\u0dca\u0da7\u0ddd\u0dbb\u0dd2\u0dba\u0dcf \u0da2\u0dbd\u0dcf\u0dc1\u0dba\u0dda \u0dc3\u0dd2\u0dba\u0dbd\u0dd4\u0db8 \u0dc0\u0dcf\u0db1\u0dca\u0daf\u0ddc\u0dbb\u0da7\u0dd4 \u0dc0\u0dd2\u0dc0\u0dd8\u0dad \u0d9a\u0dd9\u0dbb\u0dda"
   ],
-  "last_successful_scan_ms": 1794644126479,
+  "last_successful_scan_ms": 1794645033450,
   "last_source_counts": {
     "newsfirst": 22,
     "itn": 48,
