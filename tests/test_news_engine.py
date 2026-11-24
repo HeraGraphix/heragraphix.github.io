@@ -93,6 +93,26 @@ class NewsEngineTests(unittest.TestCase):
             )
         )
 
+    def test_fuel_gas_price_and_emergency_alerts_receive_high_priority(self):
+        fuel = article("fuel-1", "අද මධ්‍යම රාත්‍රියේ සිට ඉන්ධන මිල සහ ගෑස් මිල ඉහළට", int(time.time() * 1000))
+        scored = engine.calculate_importance(fuel)
+        self.assertIn(scored["importance_tier"], {"high", "urgent", "emergency"})
+        self.assertGreaterEqual(scored["importance_score"], 70)
+
+        lightning = article("disaster-1", "දිස්ත්‍රික්ක 17කට ප්‍රබල අකුණු පිළිබඳ අනතුරු ඇඟවීම්", int(time.time() * 1000))
+        scored_disaster = engine.calculate_importance(lightning)
+        self.assertIn(scored_disaster["importance_tier"], {"high", "urgent", "emergency"})
+
+    def test_routine_political_statements_stay_feed_only(self):
+        speech = article(
+            "pol-1",
+            "වත්මන් ආණ්ඩුවේ අපේක්ෂාව දිළිඳුබව සම්පූර්ණයෙන් අවසන් කිරීමයි – අමාත්‍ය උපාලි පන්නිල",
+            int(time.time() * 1000)
+        )
+        scored = engine.calculate_importance(speech)
+        self.assertEqual(scored["importance_tier"], "feed_only")
+        self.assertLess(scored["importance_score"], 40)
+
 
 if __name__ == "__main__":
     unittest.main()

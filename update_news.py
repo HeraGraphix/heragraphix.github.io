@@ -35,6 +35,12 @@ SL_TIMEZONE = timezone(timedelta(hours=5, minutes=30))
 NEWS_JSON_FILE = "news.json"
 STATE_FILE = ".news_engine_state.json"
 
+SINHALA_MONTHS = {
+    "ජනවාරි": 1, "පෙබරවාරි": 2, "මාර්තු": 3, "අප්‍රේල්": 4,
+    "මැයි": 5, "ජූනි": 6, "ජූලි": 7, "අගෝස්තු": 8,
+    "සැප්තැම්බර්": 9, "ඔක්තෝබර්": 10, "නොවැම්බර්": 11, "දෙසැම්බර්": 12
+}
+
 HERA_CONFIG = {
     "project_id": "hera-keyboard",
     "database_url": "https://hera-keyboard-default-rtdb.firebaseio.com",
@@ -190,11 +196,27 @@ def is_political_fluff(text):
         re.I
     ))
 
+def is_political_statement_or_speech(text):
+    return bool(re.search(
+        r'(අමාත්‍ය\s+[^\n–—]+(?:පවසයි|කියයි|සඳහන්\s*කරයි|අවධාරණය|පෙන්වා\s*දෙයි)|'
+        r'අමාත්‍යවරයා\s*(?:පවසයි|කියයි|සඳහන්)|'
+        r'මන්ත්‍රී\s+[^\n–—]+(?:පවසයි|කියයි)|'
+        r'මන්ත්‍රීවරයා\s*(?:පවසයි|කියයි)|'
+        r'මාධ්‍ය\s*හමුවකදී\s*පවසයි|මාධ්‍ය\s*හමුවේ\s*කියයි|ප්‍රවෘත්ති\s*සාකච්ඡාවේදී\s*(?:පවසයි|කියයි)|'
+        r'ජනහමුවක්\s*අමතමින්|රැලියක්\s*අමතමින්|දේශපාලන\s*(?:පක්ෂ|වේදිකා|සන්ධාන|පොරය|ගොසිප්)|'
+        r'සමගි\s*ජන\s*බලවේග|ජාතික\s*ජන\s*බලවේග|ශ්‍රී\s*ලංකා\s*පොදුජන|එක්සත්\s*ජාතික|'
+        r'විපක්ෂ\s*නායක\s*(?:පවසයි|කියයි)|ආණ්ඩුවේ\s*අපේක්ෂාව|හිටපු\s*(?:ජනාධිපති|අමාත්‍ය)\s*(?:පවසයි|කියයි)|'
+        r'ජනතාවට\s*පොරොන්දු|ඡන්ද\s*ව්‍යාපාර|මැතිවරණ\s*ප්‍රචාරක)',
+        str(text or ''),
+        re.I
+    ))
+
 def is_ceremonial_fluff(text):
     return bool(re.search(
         r'(ශ්‍රමදාන|පවිත්‍රතා\s*වැඩසටහන|අත්තම|සමාරම්භක\s*උත්සව|නායකත්ව\s*පුහුණු|'
         r'සම්මාන\s*ප්‍රදාන|සමරු\s*උත්සව|ශිෂ්‍යත්ව\s*ප්‍රදාන|පැළ\s*සිටුවීමේ|වෘත්තීය\s*පුහුණු|'
-        r'සුව\s*සායන|රුක්\s*රෝපණ|පුස්තකාල\s*සතිය|ප්‍රදර්ශනයක්\s*පැවැත්වේ)',
+        r'සුව\s*සායන|රුක්\s*රෝපණ|පුස්තකාල\s*සතිය|ප්‍රදර්ශනයක්\s*පැවැත්වේ|'
+        r'නව\s*ගොඩනැගිල්ලක්|විවෘත\s*කෙරේ|මුල්ගල\s*තැබේ|උත්සවයකදී|අත්සන්\s*කෙරේ)',
         str(text or ''),
         re.I
     ))
@@ -225,7 +247,35 @@ def is_emergency_news(text):
     low = text.lower()
     if is_foreign_only(low):
         return False
-    return bool(re.search(r'(රතු\s*නිවේදන|සුනාමි|භූමිකම්පා|ගංවතුර\s*(අවදානම්|අනතුරු\s*ඇඟවීම)|නාය.{0,24}(අවදානම්|අනතුරු\s*ඇඟවීම)|සුළි\s*කුණාටු|තද\s*සුළං\s*අවදානම්|වාන්\s*දොරටු|ජලාශ.*වාන්|අධික\s*වැසි\s*අවදානම්|ඉවත්\s*වන්නැයි\s*දැනුම්|හදිසි\s*තත්ත්ව|ඇඳිරි\s*නීතිය)', low))
+    return bool(re.search(
+        r'(රතු\s*නිවේදන|සුනාමි|භූ\s*චලන|භූ\s*කම්පන|ගංවතුර\s*(?:අවදානම්|අනතුරු\s*ඇඟවීම)|'
+        r'නාය.{0,24}(?:අවදානම්|අනතුරු\s*ඇඟවීම|පූර්ව\s*අනතුරු)|සුළි\s*කුණාටු|තද\s*සුළං\s*අවදානම්|'
+        r'අකුණු\s*(?:අනතුරු|අනතුරු\s*ඇඟවීම්)|ප්‍රබල\s*අකුණු|'
+        r'වාන්\s*දොරටු|ජලාශ.*වාන්|අධික\s*වැසි\s*අවදානම්|ඉවත්\s*වන්නැයි\s*දැනුම්|හදිසි\s*තත්ත්ව|ඇඳිරි\s*නීතිය)',
+        low
+    ))
+
+def is_citizen_price_or_impact(text):
+    return bool(re.search(
+        r'(ඉන්ධන\s*මිල|පෙට්‍රල්\s*මිල|ඩීසල්\s*මිල|ගෑස්\s*මිල|ලිට්‍රෝ\s*ගෑස්|ලාෆ්ස්\s*ගෑස්|බොරතෙල්\s*මිල|'
+        r'බඩු\s*මිල|පාන්\s*මිල|බේකරි\s*නිෂ්පාදන|සහල්\s*මිල|හාල්\s*මිල|බිත්තර\s*මිල|අල\s*සහ\s*ලූනු|'
+        r'විශේෂ\s*වෙළඳ\s*භාණ්ඩ\s*බදු|ආනයනික.*බද්ද|ආනයන\s*බදු|වැට්\s*බදු|\bVAT\b|TIN\b|ටින්\s*අංක|'
+        r'දේශීය\s*ආදායම්|ආදායම්\s*බදු|උද්ධමනය|මහ\s*බැංකු\s*(?:තීරණ|පොලී|වාර්තා)|පොලී\s*අනුපාත|'
+        r'ඩොලරයේ\s*(?:මිල|අගය)|විදුලි\s*(?:ගාස්තු|බිල|කප්පාදු)|ජල\s*(?:ගාස්තු|බිල|කප්පාදු)|'
+        r'බස්\s*(?:ගාස්තු|වර්ජන)|දුම්රිය\s*(?:ගාස්තු|වර්ජන|ධාවනය\s*නැවතේ|ප්‍රමාද)|'
+        r'පාසල්\s*(?:නිවාඩු|වසා\s*දැමේ)|විභාග\s*(?:ප්‍රතිඵල|කාලසටහන)|විදේශ\s*ගමන්\s*බලපත්‍ර)',
+        str(text or ''),
+        re.I
+    ))
+
+def is_severe_accident_or_fatal(text):
+    return bool(re.search(
+        r'(මාරක\s*(?:රිය|දුම්රිය)\s*අනතුර|ගැටී.*(?:මරුට|ජීවිතක්ෂයට)|අනතුරකින්.*(?:මරුට|ජීවිතක්ෂයට)|'
+        r'පුද්ගලයින්.*(?:මරුට|ජීවිතක්ෂයට)|ළමයෙකු\s*මරුට|මහා\s*ගින්න|ගින්නක්\s*හටගනී|'
+        r'ප්‍රධාන\s*මාර්ගය\s*වැසේ|ගමනාගමනය\s*ඇනහිටී)',
+        str(text or ''),
+        re.I
+    ))
 
 def calculate_importance(article):
     text = f"{article.get('title', '')} {article.get('summary', '')} {article.get('content', '')}"
@@ -247,44 +297,57 @@ def calculate_importance(article):
         reasons.append("blocked_fluff")
 
     if is_political_fluff(text):
-        score -= 45
+        score -= 50
         reasons.append("political_fluff")
 
+    # Political rhetoric / speeches / ministerial PR (Keep in feed, never notify!)
+    if is_political_statement_or_speech(text):
+        score -= 35
+        reasons.append("political_statement")
+
+    # Ceremonial & opening ribbon-cutting PR
     if is_ceremonial_fluff(text):
-        score -= 45
+        score -= 40
         reasons.append("ceremonial_fluff")
 
-    # 3. Life Safety & Catastrophic Emergencies (+65)
+    # 3. Life Safety, Catastrophic Emergencies & Severe Warnings (+65)
     if is_emergency_news(text):
         score += 65
         reasons.append("life_safety")
 
-    # 4. Breaking News / Flash alerts (+45)
+    # 4. Severe Road Accidents & Fatal Disasters (+55)
+    if is_severe_accident_or_fatal(text):
+        score += 55
+        reasons.append("fatal_or_severe_accident")
+
+    # 5. Citizen Financial, Cost of Living, Prices, Taxes & Utility Tariffs (+55 to +70)
+    if is_citizen_price_or_impact(text):
+        score += 55
+        if re.search(r'(මිල\s*(?:ඉහළ|පහළ|වැඩි|අඩු|සංශෝධනය)|බදු\s*(?:පැනවේ|වැඩි|අඩු|සංශෝධනය)|අනිවාර්යයි|අවසාන\s*දිනය|සහන)', text, re.I):
+            score += 15
+        reasons.append("citizen_price_impact")
+
+    # 6. Breaking News / Flash alerts (+45)
     if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b|flash\s*news)', text, re.I):
         score += 45
         reasons.append("breaking_news")
 
-    # 5. Weather, Climate Forecasts & Daily Warnings (+42)
-    if re.search(r'(කාලගුණ\s*විද්‍යා|කාලගුණ\s*නිවේදන|කාලගුණ\s*අනාවැකි|තැනින්\s*තැන\s*වැසි|පළාත්\s*රැසකට.*වැසි|ගිගුරුම්\s*සහිත\s*වැසි|තද\s*වැසි|අධික\s*වැසි|මිලිමීටර්\s*\d+|අකුණු\s*අනතුරු|වායු\s*ගුණාත්මක|අධික\s*උෂ්ණත්ව|මුහුදු\s*රළු)', text, re.I):
+    # 7. Weather Forecasts & Climate Warnings (+42)
+    if re.search(r'(කාලගුණ\s*විද්‍යා|කාලගුණ\s*නිවේදන|කාලගුණ\s*අනාවැකි|තැනින්\s*තැන\s*වැසි|පළාත්\s*රැසකට.*වැසි|ගිගුරුම්\s*සහිත\s*වැසි|තද\s*වැසි|අධික\s*වැසි|මිලිමීටර්\s*\d+|මි\.මී\s*\d+|අකුණු\s*අනතුරු|වායු\s*ගුණාත්මක|අධික\s*උෂ්ණත්ව|මුහුදු\s*රළු)', text, re.I):
         score += 42
         reasons.append("weather_alert")
 
-    # 6. Citizen Public Notice, Taxes, Essential Prices & Deadlines (+45)
-    if re.search(r'(TIN\b|ටින්\s*අංක|දේශීය\s*ආදායම්|ආදායම්\s*බදු|වැට්\s*බදු|\bVAT\b|අනිවාර්යයි|අවසාන\s*දිනය|සහන\s*කාලය|විදේශ\s*ගමන්\s*බලපත්‍ර|හැඳුනුම්පත්|රියදුරු\s*බලපත්‍ර|දුම්රිය\s*(වර්ජන|ප්‍රමාද|ගාස්තු)|බස්\s*(වර්ජන|ගාස්තු)|විදුලි\s*(කප්පාදු|ගාස්තු)|ජල\s*(කප්පාදු|ගාස්තු)|ඉන්ධන\s*මිල|ගෑස්\s*මිල|බේකරි\s*නිෂ්පාදන|පාන්\s*මිල|පාසල්\s*(නිවාඩු|වසා)|විභාග\s*(ප්‍රතිඵල|කාලසටහන|ප්‍රවේශ\s*පත්‍ර))', text, re.I):
-        score += 45
-        reasons.append("citizen_notice")
-
-    # 7. Major Crimes, Big Thefts, Financial Scams & Cyber Attacks (+38)
-    if re.search(r'(මුදල්\s*වංචා|රුපියල්\s*කෝටි|රුපියල්\s*ලක්ෂ|ලක්ෂ\s*ගණනින්|බැංකු\s*ගිණුම්|online\s*වංචා|whatsapp.*වංචා|තෑගි\s*පාර්සල්.*වංචා|රන්\s*භාණ්ඩ\s*කොල්ල|මහා\s*පරිමාණ\s*(මත්ද්‍රව්‍ය|කොල්ල|හොරකම්)|සයිබර්\s*ප්‍රහාර|දැවැන්ත\s*හොරකම|අල්ලස්\s*හෝ\s*දූෂණ|CID\b|TID\b|විශේෂ\s*කාර්ය\s*බලකා|මාරක\s*(රිය|දුම්රිය)\s*අනතුර|ගිනි\s*ගැනීම|නෞකා\s*අනතුර)', text, re.I):
-        score += 38
+    # 8. Major Crimes, Big Scams & National Security (+35)
+    if re.search(r'(මුදල්\s*වංචා|රුපියල්\s*කෝටි|රුපියල්\s*ලක්ෂ|ලක්ෂ\s*ගණනින්|බැංකු\s*ගිණුම්|online\s*වංචා|whatsapp.*වංචා|තෑගි\s*පාර්සල්.*වංචා|රන්\s*භාණ්ඩ\s*කොල්ල|මහා\s*පරිමාණ\s*(මත්ද්‍රව්‍ය|කොල්ල|හොරකම්)|සයිබර්\s*ප්‍රහාර|දැවැන්ත\s*හොරකම|අල්ලස්\s*හෝ\s*දූෂණ|CID\b|TID\b|විශේෂ\s*කාර්ය\s*බලකා|නෞකා\s*අනතුර)', text, re.I):
+        score += 35
         reasons.append("crime_or_scam")
 
-    # 8. National Policy, Cabinet, Central Bank & Court Rulings (+35)
-    if re.search(r'(අයවැය|imf|මහ\s*බැංකු\s*(තීරණ|පොලී)|පොලී\s*අනුපාත|උද්ධමනය|ඩොලර|රන්\s*මිල|කැබිනට්\s*(තීරණ|අනුමැති)|පනත\s*(සම්මත|අනුමත)|මැතිවරණ|ශ්‍රේෂ්ඨාධිකරණ\s*තීන්දුව|අධිකරණ\s*තීන්දුව|ජනාධිපතිවරයාගේ\s*(විශේෂ\s*ප්‍රකාශ|නියෝග|තීරණ)|ජනාධිපති\s*(නියෝග|තීරණ)|අගමැති\s*(නියෝග|තීරණ))', text, re.I):
-        score += 35
+    # 9. National Policy, Gazette, IMF & Supreme Court Rulings (+25 only if NOT political speech)
+    if not is_political_statement_or_speech(text) and re.search(r'(අතිවිශේෂ\s*ගැසට්|imf\s*(?:ණය|වාරිකය|ගිවිසුම)|ශ්‍රේෂ්ඨාධිකරණ\s*තීන්දුව|අධිකරණ\s*තීන්දුව|පනත\s*(?:සම්මත|අනුමත)|කැබිනට්\s*(?:තීරණ|අනුමැති))', text, re.I):
+        score += 25
         reasons.append("national_policy")
 
-    # 9. Major Sports Deciders & Finals Toss (+42 to +45)
+    # 10. Major Sports Deciders & Finals Toss (+42 to +45)
     is_defeat = bool(re.search(
         r'(පරාජය|පරාජය\s*වෙයි|පරාජයට\s*පත්වෙයි|පරාජය\s*විය|පැරදෙයි|පැරදුණ|පැරදුන)',
         text,
@@ -341,6 +404,35 @@ def parse_newsfirst_datetime(text, href=""):
         dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
         try:
             dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+            return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000), True
+        except Exception:
+            pass
+
+    # Extract date from URL path: e.g. /2026/10/29/
+    url_m = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', href or "")
+    if url_m:
+        year, month, day = url_m.groups()
+        try:
+            time_m = re.search(r'(\d{1,2}):(\d{2})\s*(AM|PM)', text, re.I)
+            if time_m:
+                hour, minute, ampm = time_m.groups()
+                dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
+                dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+                return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000), True
+            else:
+                # Listing does not have explicit time; flag as unverified so enrichment fetches real time
+                dt = datetime(int(year), int(month), int(day), 8, 0, 0, tzinfo=SL_TIMEZONE)
+                return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000), False
+        except Exception:
+            pass
+
+    now = datetime.now(SL_TIMEZONE)
+    return now.strftime("%Y-%m-%d %H:%M:%S"), int(now.timestamp() * 1000), False
+    if m:
+        day, month, year, hour, minute, ampm = m.groups()
+        dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
+        try:
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
             return dt.strftime("%Y-%m-%d %H:%M:%S"), int(dt.timestamp() * 1000)
         except Exception:
             pass
@@ -392,7 +484,7 @@ def fetch_newsfirst_news():
                 seen.add(p_id)
 
                 raw_text = a.get_text(" ", strip=True)
-                pub_str, pub_ms = parse_newsfirst_datetime(raw_text, href)
+                pub_str, pub_ms, pub_verified = parse_newsfirst_datetime(raw_text, href)
 
                 title_part = re.sub(r'^\s*\d{1,2}-\d{1,2}-\d{4}\s*\|\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*', '', raw_text, flags=re.I)
                 title_part = re.sub(r'\s*COLOMBO\s*\(\s*News\s*1st\s*\)\s*-\s*.*$', '', title_part, flags=re.I)
@@ -417,6 +509,7 @@ def fetch_newsfirst_news():
                     "fetched_at_ms": int(time.time() * 1000),
                     "source_name": "News 1st",
                     "source_url": full_url,
+                    "time_verified": pub_verified,
                     "is_top_story": False
                 })
         except Exception as e:
@@ -509,6 +602,7 @@ def fetch_itn_news():
                     "fetched_at_ms": int(time.time() * 1000),
                     "source_name": "ITN News",
                     "source_url": post.get('link', ''),
+                    "time_verified": True,
                     "is_top_story": False
                 })
         except Exception as e:
@@ -551,6 +645,7 @@ def fetch_itn_news():
                         "fetched_at_ms": int(time.time() * 1000),
                         "source_name": "ITN News",
                         "source_url": link,
+                        "time_verified": True,
                         "is_top_story": False
                     })
         except Exception as e:
@@ -565,11 +660,13 @@ def fetch_adaderana_news():
     seen = set()
     rss_urls = [
         "https://sinhala.adaderana.lk/rss.php",
-        "https://sinhala.adaderana.lk/rss.xml"
+        "http://sinhala.adaderana.lk/rss.php",
+        "https://sinhala.adaderana.lk/rss.xml",
+        "http://sinhala.adaderana.lk/rss.xml"
     ]
     raw = None
     for url in rss_urls:
-        raw = http_get(url, timeout=18)
+        raw = http_get(url, timeout=15)
         if raw and ("<rss" in raw or "<channel" in raw):
             break
         else:
@@ -607,9 +704,18 @@ def fetch_adaderana_news():
                 elif "feature" in raw_cat:
                     cat_name = "විශේෂාංග"
 
-                base_time = int(time.time() * 1000)
-                num_id = int(id_match.group(1)) if id_match else 0
-                estimated_ms = base_time - max(0, (253920 - num_id) * 120000) if num_id > 0 else base_time
+                pub_str = item.findtext("pubDate") or ""
+                pub_ms = int(time.time() * 1000)
+                pub_formatted = get_now_sl().strftime("%Y-%m-%d %H:%M:%S")
+                time_verified = False
+                if pub_str:
+                    try:
+                        parsed_date = email.utils.parsedate_to_datetime(pub_str)
+                        pub_ms = int(parsed_date.timestamp() * 1000)
+                        pub_formatted = parsed_date.astimezone(SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
+                        time_verified = True
+                    except Exception:
+                        pass
 
                 articles.append({
                     "id": p_id,
@@ -618,14 +724,55 @@ def fetch_adaderana_news():
                     "summary": clean_desc or title,
                     "content": clean_desc or title,
                     "image_url": normalize_image_url(image_url),
-                    "published_at": datetime.fromtimestamp(estimated_ms / 1000, tz=SL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
-                    "published_at_ms": estimated_ms,
+                    "published_at": pub_formatted,
+                    "published_at_ms": pub_ms,
                     "fetched_at_ms": int(time.time() * 1000),
                     "source_name": "අද දෙරණ",
-                    "source_url": link
+                    "source_url": link,
+                    "time_verified": time_verified,
+                    "is_top_story": False
                 })
         except Exception as e:
             print(f"Ada Derana RSS notice: {e}")
+
+    # Fallback to scraping hot-news HTML page if RSS returned no articles
+    if len(articles) < 5:
+        try:
+            hot_html = http_get("https://sinhala.adaderana.lk/sinhala-hot-news.php", timeout=15)
+            if not hot_html:
+                hot_html = http_get("http://sinhala.adaderana.lk/sinhala-hot-news.php", timeout=15)
+            if hot_html:
+                soup = BeautifulSoup(hot_html, 'html.parser')
+                for a in soup.find_all('a', href=True):
+                    href = a.get('href', '')
+                    m = re.search(r'/news/(\d+)', href)
+                    if not m:
+                        continue
+                    p_id = f"ad_{m.group(1)}"
+                    if p_id in seen:
+                        continue
+                    seen.add(p_id)
+                    title = clean_text(a.get_text(strip=True))
+                    if len(title) < 6:
+                        continue
+                    full_link = href if href.startswith('http') else f"https://sinhala.adaderana.lk/{href.lstrip('/')}"
+                    articles.append({
+                        "id": p_id,
+                        "title": title,
+                        "category": "දේශීය පුවත්",
+                        "summary": title,
+                        "content": title,
+                        "image_url": "",
+                        "published_at": get_now_sl().strftime("%Y-%m-%d %H:%M:%S"),
+                        "published_at_ms": int(time.time() * 1000),
+                        "fetched_at_ms": int(time.time() * 1000),
+                        "source_name": "අද දෙරණ",
+                        "source_url": full_link,
+                        "time_verified": False,
+                        "is_top_story": False
+                    })
+        except Exception as e:
+            print(f"Ada Derana hot news HTML fallback notice: {e}")
 
     print(f"Loaded {len(articles)} articles from Ada Derana.")
     return articles
@@ -663,20 +810,49 @@ def enrich_article_details(article):
 
         # 3. Exact Published Date for Ada Derana
         if article.get("source_name") == "අද දෙරණ":
-            date_m = re.search(r'([A-Za-z]{3},\s*\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM))', page_html, re.I)
-            if date_m:
+            # 3a. JSON-LD datePublished
+            json_m = re.search(r'"datePublished"\s*:\s*"([^"]+)"', page_html)
+            if json_m:
                 try:
-                    clean_date_str = date_m.group(1).replace('-', '').replace(',', '').strip()
-                    clean_date_str = ' '.join(clean_date_str.split())
-                    dt = datetime.strptime(clean_date_str, "%a %d %b %Y %I:%M %p").replace(tzinfo=SL_TIMEZONE)
+                    dt = datetime.fromisoformat(json_m.group(1).replace('Z', '+00:00')).astimezone(SL_TIMEZONE)
                     article["published_at_ms"] = int(dt.timestamp() * 1000)
                     article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    article["time_verified"] = True
                 except Exception:
                     pass
+            # 3b. HTML time tag
+            if not article.get("time_verified"):
+                time_m = re.search(r'<time[^>]+datetime=["\']([^"\']+)["\']', page_html, re.I)
+                if time_m:
+                    try:
+                        dt = datetime.fromisoformat(time_m.group(1).replace('Z', '+00:00')).astimezone(SL_TIMEZONE)
+                        article["published_at_ms"] = int(dt.timestamp() * 1000)
+                        article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                        article["time_verified"] = True
+                    except Exception:
+                        pass
+            # 3c. Sinhala date string: නොවැම්බර් 24, 2026 06:14 pm
+            if not article.get("time_verified"):
+                si_m = re.search(r'(ජනවාරි|පෙබරවාරි|මාර්තු|අප්‍රේල්|මැයි|ජූනි|ජූලි|අගෝස්තු|සැප්තැම්බර්|ඔක්තෝබර්|නොවැම්බර්|දෙසැම්බර්)\s*(\d{1,2}),?\s*(\d{4})\s*(\d{1,2}):(\d{2})\s*(am|pm|පෙ\.ව|ප\.ව)?', page_html, re.I)
+                if si_m:
+                    month_name, day, year, hour, minute, ampm = si_m.groups()
+                    month_num = SINHALA_MONTHS.get(month_name, 1)
+                    hour_num = int(hour)
+                    if ampm and ('pm' in ampm.lower() or 'ප.ව' in ampm) and hour_num < 12:
+                        hour_num += 12
+                    elif ampm and ('am' in ampm.lower() or 'පෙ.ව' in ampm) and hour_num == 12:
+                        hour_num = 0
+                    try:
+                        dt = datetime(int(year), month_num, int(day), hour_num, int(minute), 0, tzinfo=SL_TIMEZONE)
+                        article["published_at_ms"] = int(dt.timestamp() * 1000)
+                        article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                        article["time_verified"] = True
+                    except Exception:
+                        pass
 
         # 4. Exact Published Date for News 1st
         if article.get("source_name") == "News 1st":
-            date_m = re.search(r'(\d{1,2})-(\d{1,2})-(\d{4})[^\d\n\r]{0,30}(\d{1,2}):(\d{2})\s*(AM|PM)', page_html, re.I)
+            date_m = re.search(r'(\d{1,2})-(\d{1,2})-(\d{4})[^\d\n\r|T]{0,10}[|T\s]+(\d{1,2}):(\d{2})\s*(AM|PM)', page_html, re.I)
             if date_m:
                 day, month, year, hour, minute, ampm = date_m.groups()
                 dt_str = f"{year}-{int(month):02d}-{int(day):02d} {int(hour):02d}:{minute} {ampm.upper()}"
@@ -684,6 +860,7 @@ def enrich_article_details(article):
                     dt = datetime.strptime(dt_str, "%Y-%m-%d %I:%M %p").replace(tzinfo=SL_TIMEZONE)
                     article["published_at_ms"] = int(dt.timestamp() * 1000)
                     article["published_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                    article["time_verified"] = True
                 except Exception:
                     pass
     except Exception:
@@ -978,11 +1155,15 @@ def main():
         f"-> deduplicated: {len(unique_articles)} articles."
     )
 
-    # 3. Enrich articles needing images or body in parallel
-    print("Enriching articles needing images or body in parallel...")
+    # 3. Enrich articles needing images, time verification, or body in parallel
+    print("Enriching articles needing images, time verification, or body in parallel...")
     needs_enrichment_indices = [
         i for i, art in enumerate(unique_articles)
-        if not art.get("image_url") or art.get("source_name") in ("අද දෙරණ", "News 1st") and len(art.get("content", "")) < 40
+        if (
+            not art.get("image_url")
+            or not art.get("time_verified")
+            or (art.get("source_name") in ("අද දෙරණ", "News 1st") and len(art.get("content", "")) < 60)
+        )
     ]
     targets = [unique_articles[i] for i in needs_enrichment_indices[:40]]
     if targets:
