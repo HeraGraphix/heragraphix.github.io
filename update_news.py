@@ -261,9 +261,26 @@ def is_citizen_price_or_impact(text):
         r'බඩු\s*මිල|පාන්\s*මිල|බේකරි\s*නිෂ්පාදන|සහල්\s*මිල|හාල්\s*මිල|බිත්තර\s*මිල|අල\s*සහ\s*ලූනු|'
         r'විශේෂ\s*වෙළඳ\s*භාණ්ඩ\s*බදු|ආනයනික.*බද්ද|ආනයන\s*බදු|වැට්\s*බදු|\bVAT\b|TIN\b|ටින්\s*අංක|'
         r'දේශීය\s*ආදායම්|ආදායම්\s*බදු|උද්ධමනය|මහ\s*බැංකු\s*(?:තීරණ|පොලී|වාර්තා)|පොලී\s*අනුපාත|'
-        r'ඩොලරයේ\s*(?:මිල|අගය)|විදුලි\s*(?:ගාස්තු|බිල|කප්පාදු)|ජල\s*(?:ගාස්තු|බිල|කප්පාදු)|'
+        r'ඩොලරයේ\s*(?:මිල|අගය)|විදුලි\s*(?:ගාස්තු|බිල|කප්පාදු|සංශෝධන|යෝජනා)|ජල\s*(?:ගාස්තු|බිල|කප්පාදු|සංශෝධන)|'
+        r'මහජන\s*උපයෝගිතා|PUCSL\b|ගාස්තු\s*(?:සංශෝධන|යෝජනා)|මිල\s*(?:සංශෝධන|යෝජනා)|'
         r'බස්\s*(?:ගාස්තු|වර්ජන)|දුම්රිය\s*(?:ගාස්තු|වර්ජන|ධාවනය\s*නැවතේ|ප්‍රමාද)|'
         r'පාසල්\s*(?:නිවාඩු|වසා\s*දැමේ)|විභාග\s*(?:ප්‍රතිඵල|කාලසටහන)|විදේශ\s*ගමන්\s*බලපත්‍ර)',
+        str(text or ''),
+        re.I
+    ))
+
+def is_major_cyber_attack(text):
+    return bool(re.search(
+        r'(CIA\b|FBI\b|Pentagon|සයිබර්\s*ප්‍රහාර|දැවැන්ත\s*හැක්\s*කිරීම|පරිගණක\s*පද්ධති.*සයිබර්|'
+        r'දත්ත\s*පද්ධති\s*හැක්|ගෝලීය\s*තොරතුරු\s*පද්ධති.*ප්‍රහාර|අන්තර්ජාල\s*පද්ධති.*අඩපණ)',
+        str(text or ''),
+        re.I
+    ))
+
+def is_space_or_science_news(text):
+    return bool(re.search(
+        r'(අභ්‍යවකාශ\s*(?:යානා|මෙහෙයුම|මධ්‍යස්ථාන|ගමන)|ගගනගාමී|නාසා\s*(?:ආයතන|මෙහෙයුම)|\bNASA\b|'
+        r'චන්ද්‍ර\s*මෙහෙයුම|අඟහරු\s*මෙහෙයුම|රොකට්\s*යානය|Shenzhou\b|ෂෙන්ෂෝ|අභ්‍යවකාශයට)',
         str(text or ''),
         re.I
     ))
@@ -323,21 +340,34 @@ def calculate_importance(article):
     # 5. Citizen Financial, Cost of Living, Prices, Taxes & Utility Tariffs (+55 to +70)
     if is_citizen_price_or_impact(text):
         score += 55
-        if re.search(r'(මිල\s*(?:ඉහළ|පහළ|වැඩි|අඩු|සංශෝධනය)|බදු\s*(?:පැනවේ|වැඩි|අඩු|සංශෝධනය)|අනිවාර්යයි|අවසාන\s*දිනය|සහන)', text, re.I):
+        if re.search(r'(මිල\s*(?:ඉහළ|පහළ|වැඩි|අඩු|සංශෝධනය)|බදු\s*(?:පැනවේ|වැඩි|අඩු|සංශෝධනය)|ගාස්තු\s*(?:සංශෝධන|යෝජනා)|අනිවාර්යයි|අවසාන\s*දිනය|සහන)', text, re.I):
             score += 15
         reasons.append("citizen_price_impact")
 
-    # 6. Breaking News / Flash alerts (+45)
+    # 6. Major Global Cyber Attacks & Major Intel Leaks (+55, High Priority)
+    if is_major_cyber_attack(text):
+        score += 55
+        if "foreign_context" in reasons:
+            score += 35  # Neutralize foreign penalty for critical cyber security alerts
+        reasons.append("major_cyber_attack")
+
+    # Space & Science Milestones: Keep in news feed (feed_only), no push notification
+    if is_space_or_science_news(text):
+        article["category"] = "විශේෂාංග"
+        score = min(score, 45)
+        reasons.append("space_science_feed_only")
+
+    # 7. Breaking News / Flash alerts (+45)
     if re.search(r'(විශේෂ\s*(පුවත|නිවේදනය)|හදිසි\s*නිවේදනය|ක්ෂණික\s*පුවත්|දැන්\s*ලැබුණු\s*පුවත|breaking\s*news|news\s*alert|\balert\b|flash\s*news)', text, re.I):
         score += 45
         reasons.append("breaking_news")
 
-    # 7. Weather Forecasts & Climate Warnings (+42)
+    # 8. Weather Forecasts & Climate Warnings (+42)
     if re.search(r'(කාලගුණ\s*විද්‍යා|කාලගුණ\s*නිවේදන|කාලගුණ\s*අනාවැකි|තැනින්\s*තැන\s*වැසි|පළාත්\s*රැසකට.*වැසි|ගිගුරුම්\s*සහිත\s*වැසි|තද\s*වැසි|අධික\s*වැසි|මිලිමීටර්\s*\d+|මි\.මී\s*\d+|අකුණු\s*අනතුරු|වායු\s*ගුණාත්මක|අධික\s*උෂ්ණත්ව|මුහුදු\s*රළු)', text, re.I):
         score += 42
         reasons.append("weather_alert")
 
-    # 8. Major Crimes, Big Scams & National Security (+35)
+    # 9. Major Crimes, Big Scams & National Security (+35)
     if re.search(r'(මුදල්\s*වංචා|රුපියල්\s*කෝටි|රුපියල්\s*ලක්ෂ|ලක්ෂ\s*ගණනින්|බැංකු\s*ගිණුම්|online\s*වංචා|whatsapp.*වංචා|තෑගි\s*පාර්සල්.*වංචා|රන්\s*භාණ්ඩ\s*කොල්ල|මහා\s*පරිමාණ\s*(මත්ද්‍රව්‍ය|කොල්ල|හොරකම්)|සයිබර්\s*ප්‍රහාර|දැවැන්ත\s*හොරකම|අල්ලස්\s*හෝ\s*දූෂණ|CID\b|TID\b|විශේෂ\s*කාර්ය\s*බලකා|නෞකා\s*අනතුර)', text, re.I):
         score += 35
         reasons.append("crime_or_scam")

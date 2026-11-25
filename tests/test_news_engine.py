@@ -113,6 +113,37 @@ class NewsEngineTests(unittest.TestCase):
         self.assertEqual(scored["importance_tier"], "feed_only")
         self.assertLess(scored["importance_score"], 40)
 
+    def test_major_cyber_attack_receives_high_priority(self):
+        cia_hack = article(
+            "cyber-1",
+            "CIA පරිගණක පද්ධතියකට සයිබර් ප්‍රහාරයක්",
+            int(time.time() * 1000)
+        )
+        scored = engine.calculate_importance(cia_hack)
+        self.assertIn(scored["importance_tier"], {"high", "urgent"})
+        self.assertGreaterEqual(scored["importance_score"], 55)
+
+    def test_utility_tariff_proposal_receives_high_priority(self):
+        tariff = article(
+            "tariff-1",
+            "විදුලි ගාස්තු සංශෝධන යෝජනාව මහජන උපයෝගිතා කොමිසමට ඉදිරිපත් කෙරේ",
+            int(time.time() * 1000)
+        )
+        scored = engine.calculate_importance(tariff)
+        self.assertIn(scored["importance_tier"], {"high", "urgent"})
+        self.assertGreaterEqual(scored["importance_score"], 70)
+
+    def test_space_mission_stays_feed_only_no_notification(self):
+        space = article(
+            "space-1",
+            "Shenzhou-24 අභ්‍යවකාශ යානය සාර්ථකව ගුවන්ගත කෙරේ – පාකිස්තාන ගගනගාමියෙක් ඉතිහාසයට",
+            int(time.time() * 1000)
+        )
+        scored = engine.calculate_importance(space)
+        self.assertEqual(scored["importance_tier"], "feed_only")
+        self.assertEqual(scored["category"], "විශේෂාංග")
+        self.assertLessEqual(scored["importance_score"], 45)
+
 
 if __name__ == "__main__":
     unittest.main()
